@@ -1,0 +1,47 @@
+<html>
+<meta charset="utf-8">
+
+<head>
+    <script src="prototypes.js"></script>
+    <script src='libs/underscore-min.js'></script>
+    <script src='libs/jquery.min.js'></script>
+    <script src='libs/lodash.min.js'></script>
+    <script src='libs/backbone-min.js'></script>
+    <script src='libs/joint.min.js'></script>
+    <script src='graph/graphlib.core.js'></script>
+    <script src='graph/dagre.core.js'></script>
+    <script src='graph/jointjs.directedgraph.js'></script>
+    <script src="graph/graph_class.js"></script>
+    <script src="graph/models.js"></script>
+    <script src="sensorML_parse.js"></script>
+    
+    <link rel="stylesheet" type="text/css" href="css/joint.min.css">
+    
+</head>
+
+<body>
+    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>
+    <div id="paper-create"></div>
+</body>
+
+<script>
+    var graph;
+    jQuery.get('data_files/AggregateProcess.txt', function (data) {
+        data = jQuery.parseXML(data);
+        //convert xml to json
+        var json = xmlToJson(data);
+        console.log('Parsed XML to JSON:');
+        console.log(json);
+        //Refining incoming data
+        var refined = sensorMLhandler(json);
+        console.log('Refined for SensorML:');
+        console.log(refined);
+        //Creating a Process Flow Diagram
+        graph = new Graph(refined);
+        graph.Models.Create();
+        graph.Models.Connect();
+        graph.Models.DirectedGraph();
+    })
+</script>
+
+</html>
