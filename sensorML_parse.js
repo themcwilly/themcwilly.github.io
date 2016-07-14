@@ -76,10 +76,10 @@ var getParameters = function (params) {
             if (typeof params[param]['swe:DataRecord'] !== 'undefined') {
                 var field = params[param]['swe:DataRecord']['swe:field'];
                 if (typeof field.push === 'undefined') {
-                    list[field['@attributes']['name']] = field['swe:Quantity']['swe:value']['#text'];
+                    list[field['@attributes']['name']] = { value: field['swe:Quantity']['swe:value']['#text']};
                 } else {
                     for (var k = 0; k < field.length; k++) {
-                        list[field[k]['@attributes']['name']] = field[k]['swe:Quantity']['swe:value']['#text'];
+                        list[field[k]['@attributes']['name']] = {value: field[k]['swe:Quantity']['swe:value']['#text']};
                     }
                 }
             } else if (typeof params[param]['swe:Quantity'] !== 'undefined') {

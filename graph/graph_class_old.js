@@ -23,10 +23,12 @@ var Graph = function (process_object) {
             scope.process = proc;
             var process_group = Models.Process(proc);
             scope.graph.addCell(process_group);
+            //Besides the parent process, components and the parent's inputs/outputs, are the only "Models" being used with JointJS
+            //inputs/outputs are stand-alone models w/o inputs and outputs of their own
+            if (typeof scope.process_object[proc].components === 'object') scope._create_component_models(process_group, scope.process_object[proc].components);
             if (typeof scope.process_object[proc].inputs === 'object') scope._create_IO_models(process_group, scope.process_object[proc].inputs, 'In');
             if (typeof scope.process_object[proc].outputs === 'object') scope._create_IO_models(process_group, scope.process_object[proc].outputs, 'Out');
-            //Components are treated differently - they'll be nodes with their own inputs/outputs
-            if (typeof scope.process_object[proc].components === 'object') scope._create_component_models(process_group, scope.process_object[proc].components);
+
             cnt1++;
         }
     }
@@ -44,15 +46,62 @@ var Graph = function (process_object) {
                 var link_target = 'source';
                 if (srcORdst == 'destination') link_target = 'target';
                 var string_list = connections[connection][srcORdst].split('/');
-                if(string_list.length==2){
-                    var mod = scope.process_object[scope.process][string_list[0]][string_list[1]]._model;
-                }else{
-                    var mod = scope.process_object[scope.process][string_list[0]][string_list[1]][string_list[2]][string_list[3]]._model;
+                var mod = scope.process_object[scope.process][string_list[0]][string_list[1]]._model;
+                if (typeof mod._portSelectors === 'object') {
+                    //TODO: this implies the strin_list.length = 4... not the best method of determining the model type
+                    link_object[link_target] = {
+                        id: mod.id,
+                        selector: mod.getPortSelector(string_list[3])
+                    }
+                    //to make finding this later, easier, we'll add an attribute saying it's connected
+                    scope.process_object[scope.process][string_list[0]][string_list[1]][string_list[2]][string_list[3]]._connected = true;
+                } else {
+                    link_object[link_target] = mod;
                 }
-                link_object[link_target] = mod;
             }
             var link = new joint.shapes.devs.Link(link_object);
             scope.graph.addCell(link);
+        }
+    }
+    this.Models.Connect_PortAttachments = function () {
+        var components = scope.process_object[scope.process].components;
+        if (typeof components !== 'object' || components.length == 0) return console.log('WARNING: No components found.');
+        for (var component in components) {
+
+            var parent_model = components[component]._model; //portSelectors
+            var parent_group = components[component]._group;
+            var src_type_keys = Object.keys(components[component]);
+            src_type_keys = _.without(src_type_keys, '_model');
+            src_type_keys = _.without(src_type_keys, '_group');
+            for (var src_type_idx in src_type_keys) {
+                var src_type = src_type_keys[src_type_idx];
+                for (var src_obj in components[component][src_type]) {
+                    //console.log(component + '/' + src_type + '/' + src_obj);
+                    var connected = components[component][src_type][src_obj]._connected;
+                    if (typeof connected === 'undefined') connected = false;
+                    if (!connected) {
+                        //model hasn't been created yet
+                        var mdl = Models['component.' + src_type](src_obj);
+                        components[component][src_type][src_obj]._model = mdl;
+                        scope.graph.addCell(mdl);
+                        parent_group.embed(mdl);
+                        var child_model = components[component][src_type][src_obj]._model //no portSelectors
+                        var child_value = components[component][src_type][src_obj].value;
+                        if (typeof child_value === 'undefined') child_value = null;
+                        var link_object = {
+                            source: {
+                                id: parent_model.id,
+                                selector: parent_model.getPortSelector(src_obj)
+                            },
+                            target: child_model
+                        }
+                        var link = new joint.shapes.devs.Link(link_object);
+                        scope.graph.addCell(link);
+                    }
+
+                }
+
+            }
         }
     }
     this.Models.DirectedGraph = function () {
@@ -70,61 +119,67 @@ var Graph = function (process_object) {
             }
         });
         scope._constraints();
-//        scope.Models.Style();
-//        scope.Models.Text_Nodes();
+        scope.Models.Style();
+        scope.Models.Text_Nodes();
     }
     this.Models.Style = function () {
         var parameter_color = '#66ff33';
         var nonValue_color = '#ffffff';
         var components = scope.process_object[scope.process].components;
-        for(var component in scope.process_object[scope.process].components){
+        for (var component in scope.process_object[scope.process].components) {
             var parameters = components[component].parameters;
-            if(typeof parameters !== 'undefined'){
-                for(var parameter in parameters){
-                    if(typeof parameters[parameter].value !== 'undefined'){
+            if (typeof parameters !== 'undefined') {
+                for (var parameter in parameters) {
+                    if (typeof parameters[parameter].value !== 'undefined') {
                         //it has a value - must change the port to take values and add event handler
                         var mod = components[component]._model;
                         var attr = {};
-                        attr['[port="'+parameter+'"]'] = {fill:parameter_color};
+                        attr['[port="' + parameter + '"]'] = {
+                            fill: parameter_color
+                        };
                         mod.attr(attr);
                     }
                 }
             }
-//            var inputs = components[component].inputs;
-//            for(var input in inputs){
-//                if(!inputs[input]._connected){
-//                    var attr = {};
-//                    attr['[port="'+parameter+'"]'] = {fill: nonValue_color}
-//                    mod.attr(attr);
-//                }
-//            }
+            //            var inputs = components[component].inputs;
+            //            for(var input in inputs){
+            //                if(!inputs[input]._connected){
+            //                    var attr = {};
+            //                    attr['[port="'+parameter+'"]'] = {fill: nonValue_color}
+            //                    mod.attr(attr);
+            //                }
+            //            }
             var outputs = components[component].outputs;
-            for(var output in outputs){
-                if(!outputs[output]._connected){
+            for (var output in outputs) {
+                if (!outputs[output]._connected) {
+                    console.log(output);
                     var attr = {};
-                    attr['[port="'+output+'"]'] = {fill: nonValue_color}
+                    attr['[port="' + output + '"]'] = {
+                        fill: nonValue_color
+                    }
                     mod.attr(attr);
+
                 }
             }
         }
     }
     this.Models.Text_Nodes = function () {
         var components = scope.process_object[scope.process].components;
-        for(var component in scope.process_object[scope.process].components){
+        for (var component in scope.process_object[scope.process].components) {
             var parameters = components[component].parameters;
-            if(typeof parameters !== 'undefined'){
-                for(var parameter in parameters){
-                    if(typeof parameters[parameter].value !== 'undefined'){
+            if (typeof parameters !== 'undefined') {
+                for (var parameter in parameters) {
+                    if (typeof parameters[parameter].value !== 'undefined') {
                         //var input_box = '<input id="parameter_input_'+parameter+'" type="text" value="'+parameters[parameter].value+'"></input>';
-                        
+
                         //will have to change from port to a custom html element and create a new group surrounding it
-                        
+
                         var input_box = '<foreignObject x="50" y="50" width="200" height="150"><body xmlns="http://www.w3.org/1999/xhtml"><form><input type="text" value="hello world"/></form></body></foreignObject>';
                         $('.rotatable')
-                            .filter(':contains("'+component+'")')
+                            .filter(':contains("' + component + '")')
                             .find('.inPorts')
                             .find('.port')
-                            .filter(':contains("'+parameter+'")')
+                            .filter(':contains("' + parameter + '")')
                             .find('circle')
                             .html(input_box);
                     }
@@ -134,17 +189,6 @@ var Graph = function (process_object) {
     }
 
     //HELPER FUNCTIONS - NOT MEANT TO BE PART OF MAIN CLASS
-    this._create_group_model = function (parent_grp, io_object, model_type, group_name) {
-//        var local_group = Models.Process(group_name);
-//        scope.graph.addCell(local_group);
-        for (var variable in io_object) {
-            io_object[variable]._model = Models[model_type](variable);
-            scope.graph.addCell(io_object[variable]._model);
-//            local_group.embed(io_object[variable]._model);
-            parent_grp.embed(io_object[variable]._model);
-        }
-//        if (typeof parent_grp !== 'undefined') parent_grp.embed(local_group);
-    }
     this._create_IO_models = function (grp, io_object, io) {
         for (var variable in io_object) {
             io_object[variable]._model = Models[io](variable);
@@ -153,18 +197,53 @@ var Graph = function (process_object) {
         }
     }
     this._create_component_models = function (grp, comps) {
+
         for (var comp in comps) {
+            var comp_group = Models.Process(comp);
+            grp.embed(comp_group);
+            scope.graph.addCell(comp_group);
             //function (name, inputs, outputs, x, y, width, height)
             //For now, we are making parameters a part of inputs... They may be isolated models similar to the parent's inputs/outputs - undecided at this point
             var inputs = [];
             var outputs = [];
             var parameters = [];
-            var comp_group = Models.Process(comp);
-            scope.graph.addCell(comp_group);
-            if (typeof comps[comp].inputs !== 'undefined') scope._create_group_model(comp_group, comps[comp].inputs, 'component.input','INPUTS');
-            if (typeof comps[comp].outputs !== 'undefined') scope._create_group_model(comp_group, comps[comp].outputs, 'component.output','OUTPUTS');
-            if (typeof comps[comp].parameters !== 'undefined') scope._create_group_model(comp_group, comps[comp].parameters, 'component.parameter','PARAMETERS');
-            if (typeof grp !== 'undefined') grp.embed(comp_group);
+            //scope._create_IO_models(process_group, scope.process_object[proc].inputs, 'In');
+            if (typeof comps[comp].inputs !== 'undefined') inputs = Object.keys(comps[comp].inputs);
+            if (typeof comps[comp].outputs !== 'undefined') outputs = Object.keys(comps[comp].outputs);
+            if (typeof comps[comp].parameters !== 'undefined') inputs = _.flatten([inputs, Object.keys(comps[comp].parameters)]);
+            comps[comp]._model = Models.Component(comp, inputs, outputs, 100, 100);
+            scope.graph.addCell(comps[comp]._model);
+            if (typeof grp !== 'undefined') {
+                comp_group.embed(comps[comp]._model);
+                comps[comp]._group = comp_group;
+            }
+
+            //            //TEST - see if we can add box to each port requiring a value
+            //            var port_types = Object.keys(comps[comp]);
+            //            port_types = _.without(port_types,'_model');
+            //            //console.log(port_types);
+            //            for(var port_type_idx in port_types){
+            //                var port_type = port_types[port_type_idx];
+            //                //console.log(port_type);
+            //                var src_type_keys = Object.keys(comps[comp][port_type]);
+            //                src_type_keys = _.without(src_type_keys,'_model');
+            //                //console.log(src_type_keys);
+            //                for(var src_type_idx in src_type_keys){
+            //                    //console.log(comps[comp]);
+            //                    //console.log(src_type_keys[src_type_idx]);
+            //                    var mdl = Models['component.'+port_type](src_type_keys[src_type_idx]);
+            //                    var obj = comps[comp][port_type][src_type_keys[src_type_idx]];
+            //                    console.log(obj);
+            //                    //if(typeof obj.value !== 'undefined'){
+            //                        obj._model = mdl;
+            //                        scope.graph.addCell(mdl);
+            //                        if (typeof grp !== 'undefined') grp.embed(mdl);
+            //                    //}
+            //                    
+            //                }
+            //            }
+
+
         }
     }
     this._locate_port = function (name) {

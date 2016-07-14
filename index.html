@@ -11,12 +11,13 @@
     <script src='graph/graphlib.core.js'></script>
     <script src='graph/dagre.core.js'></script>
     <script src='graph/jointjs.directedgraph.js'></script>
-    <script src="graph/graph_class.js"></script>
+    <script src="graph/graph_class_old.js"></script>
+<!--    <script src="graph/graph_class.js"></script>-->
     <script src="graph/models.js"></script>
     <script src="sensorML_parse.js"></script>
-    
+
     <link rel="stylesheet" type="text/css" href="css/joint.min.css">
-    
+
 </head>
 
 <body>
@@ -40,6 +41,7 @@
         graph = new Graph(refined);
         graph.Models.Create();
         graph.Models.Connect();
+        graph.Models.Connect_PortAttachments();
         graph.Models.DirectedGraph();
     })
 </script>
