@@ -1,4 +1,9 @@
 var Models = {};
+Models._colors = {
+    parameters: '#FFFFFF',
+    inputs: '#66FF33',
+    outputs: '#E74C3C'
+}
 Models._template = function (name, value, attrs) {
     var val = '';
     if (typeof value !== 'undefined' && value != '') val = value;
@@ -21,45 +26,65 @@ Models._template = function (name, value, attrs) {
     }
     var el = new joint.shapes.basic.Rect({
         size: {
-            width: name.width() + 20,
-            height: 30
+            width: 120,
+            height: 60
         },
         attrs: attributes
     });
     return el;
 }
 Models['component.inputs'] = function(name){
-    return Models._template(name, '', {
+    var mdl = Models._template(name, '', {
         rect: {
             rx: 2,
             ry: 2,
-            fill: '#66FF66',
+            fill: Models._colors.inputs,
             stroke: '#4B4A67',
             'stroke-width': 2
         }
     });
+    mdl._SensorML = {};
+    mdl._SensorML.name = name;
+    mdl._SensorML.parent = false;
+    return mdl;
 }
 Models['component.outputs'] = function(name){
-    return Models._template(name, '', {
+    var mdl = Models._template(name, '', {
         rect: {
             rx: 2,
             ry: 2,
-            fill: '#E74C3C',
+            fill: Models._colors.outputs,
             stroke: '#4B4A67',
             'stroke-width': 2
         }
     });
+    mdl._SensorML = {};
+    mdl._SensorML.name = name;
+    mdl._SensorML.parent = false;
+    return mdl;
 }
 Models['component.parameters'] = function(name){
-    return Models._template(name, '', {
+    //return Models.Test(name,100);
+    
+    var mdl = Models._template(name, '', {
         rect: {
             rx: 2,
             ry: 2,
-            fill: '#0066ff',
+            fill: Models._colors.parameters,
             stroke: '#4B4A67',
             'stroke-width': 2
         }
     });
+    mdl._SensorML = {};
+    mdl._SensorML.name = name;
+    mdl._SensorML.parent = false;
+    return mdl;
+}
+Models['parent.inputs'] = function(name){
+    return Models['component.inputs'](name);
+}
+Models['parent.outputs'] = function(name){
+    return Models['component.outputs'](name);
 }
 
 Models.Component = function (name, inputs, outputs, x, y, width, height) {
@@ -82,44 +107,44 @@ Models.Component = function (name, inputs, outputs, x, y, width, height) {
             '.label': {
                 text: name,
                 'ref-x': 0.5,
-                'ref-y': 0.5
+                'ref-y': 0.45
             },
             //rect: { fill: '#2ECC71' },
             rect: {
                 fill: color
             },
             '.inPorts circle': {
-                fill: '#66ff33'
+                fill: Models._colors.inputs
             },
             '.outPorts circle': {
-                fill: '#E74C3C'
+                fill: Models._colors.outputs
             },
             //'.inPorts': {transform: 'rotate(90)', 'ref-x':0.99,'ref-y':-0.3}
         }
     });
     //m1.attr({ '[port="intercept"]': { fill: 'blue' } })
+    m1._SensorML = {};
+    m1._SensorML.name = name;
+    m1._SensorML.parent = true;
     return m1;
 }
-Models.Parameter = function (name, value, attrs) {
-    var val = '';
-    if (typeof value !== 'undefined' && value != '') val = value;
+Models.Group = function (name,parent) {
+    var color = '#99CCFF';
+    if(parent) color = '#ffb84d';
     var attributes = {
         rect: {
             rx: 2,
             ry: 2,
-            fill: '#31D0C6',
+            fill: color,
             stroke: '#4B4A67',
             'stroke-width': 2
         },
         text: {
-            text: name + val,
+            text: name,
             fill: 'black',
             'ref-y': 15
         }
     };
-    for (var attr in attrs) {
-        attributes[attr] = attrs[attr];
-    }
     var el = new joint.shapes.basic.Rect({
         size: {
             width: name.width() + 20,
@@ -128,40 +153,5 @@ Models.Parameter = function (name, value, attrs) {
         attrs: attributes
     });
     return el;
-}
-Models.In = function (name) {
-    return Models.Parameter(name, '', {
-        rect: {
-            rx: 2,
-            ry: 2,
-            fill: '#66FF66',
-            stroke: '#4B4A67',
-            'stroke-width': 2
-        }
-    });
-
-}
-Models.Out = function (name) {
-    return Models.Parameter(name, '', {
-        rect: {
-            rx: 2,
-            ry: 2,
-            fill: '#FF3300',
-            stroke: '#4B4A67',
-            'stroke-width': 2
-        }
-    });
-
-}
-Models.Process = function (name) {
-    return Models.Parameter(name, '', {
-        rect: {
-            rx: 2,
-            ry: 2,
-            fill: '#FFCC00',
-            stroke: '#4B4A67',
-            'stroke-width': 2
-        }
-    });
 
 }

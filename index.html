@@ -11,8 +11,7 @@
     <script src='graph/graphlib.core.js'></script>
     <script src='graph/dagre.core.js'></script>
     <script src='graph/jointjs.directedgraph.js'></script>
-    <script src="graph/graph_class_old.js"></script>
-<!--    <script src="graph/graph_class.js"></script>-->
+    <script src="graph/graph_class.js"></script>
     <script src="graph/models.js"></script>
     <script src="sensorML_parse.js"></script>
 
@@ -21,8 +20,9 @@
 </head>
 
 <body>
-    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>
     <div id="paper-create"></div>
+    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>
+    
 </body>
 
 <script>
@@ -41,7 +41,7 @@
         graph = new Graph(refined);
         graph.Models.Create();
         graph.Models.Connect();
-        graph.Models.Connect_PortAttachments();
+        graph.Models.PortAttachments();
         graph.Models.DirectedGraph();
     })
 </script>
