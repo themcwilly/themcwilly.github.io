@@ -1,24 +1,9 @@
-var Graph = function (process_object) {
+var Graph = function (div,process_object) {
     //INITIALIZE VARIABLES
     var scope = this;
     this.process = null;
     this.process_object = process_object;
-    this.graph = new joint.dia.Graph;
-    this.paper = new joint.dia.Paper({
-        el: $('#paper-create'),
-        width: window.innerWidth * 0.99,
-        height: window.innerHeight * 0.99,
-        gridSize: 1,
-        model: scope.graph
-    });
-    this.link_style = {
-        name: 'metro',
-        args: {
-//            startDirections: ['top'],
-//            endDirections: ['bottom'],
-//            excludeTypes: ['myNamespace.MyCommentElement']
-        }
-    };
+    this.div = div;
 
     //DEFINE CLASS FUNCTIONS
     this.Models = {};
@@ -51,11 +36,16 @@ var Graph = function (process_object) {
         for (var connection in connections) {
             var link_object = {};
             var pass_thru = {};
+            var parents = {};
+            var changed_by=null;
+            var changes = null;
             for (var srcORdst in connections[connection]) {
                 var link_target = 'source';
                 if (srcORdst == 'destination') link_target = 'target';
                 var string_list = connections[connection][srcORdst].split('/');
-                var mod = scope.process_object[scope.process][string_list[0]][string_list[1]]._model;
+                var parent = scope.process_object[scope.process][string_list[0]][string_list[1]];
+                parents[link_target] = parent;
+                var mod = parent._model;
                 if (typeof mod._portSelectors === 'object') {
                     //TODO: this implies the strin_list.length = 4... not the best method of determining the model type
                     link_object[link_target] = {
@@ -74,12 +64,36 @@ var Graph = function (process_object) {
                 if(typeof scope.Models._requires_organization.parent === 'undefined') scope.Models._requires_organization.parent = {elements:[]};
                 scope.Models._requires_organization.parent.elements.push(mod);
                 pass_thru[link_target] = mod;
+                
+                if(link_target=='source') changed_by = string_list;
+                if(link_target=='target') changes = string_list;
+                
+//                console.log(string_list);
+//                console.log(mod);
             }
             var link = new joint.shapes.devs.Link(link_object);
             link.set('router', scope.link_style);
             scope.graph.addCell(link);
             if(typeof pass_thru.source._SensorML.pass_thru === 'undefined') pass_thru.source._SensorML.pass_thru = [];
             pass_thru.source._SensorML.pass_thru.push(pass_thru.target);
+            
+            if(changes!=null && changed_by!=null){
+                //find root
+                var dig = scope.process_object[scope.process];
+                for(var i=0; i<changes.length; i++){
+                    dig = dig[changes[i]];
+                }
+                dig._changed_by = changed_by.join('.');
+                dig._parent = [changes[0],changes[1]].join('.');
+                var dig = scope.process_object[scope.process];
+                for(var i=0; i<changed_by.length; i++){
+                    dig = dig[changed_by[i]];
+                }
+                dig._changes = changes.join('.');
+                dig._parent = [changed_by[0],changed_by[1]].join('.');
+            }
+            
+            
         }
     }
     this.Models._requires_organization = {};
@@ -98,6 +112,8 @@ var Graph = function (process_object) {
             var src_type_keys = Object.keys(components[component]);
             src_type_keys = _.without(src_type_keys, '_model');
             src_type_keys = _.without(src_type_keys, '_group');
+            src_type_keys = _.without(src_type_keys, '_changes');
+            src_type_keys = _.without(src_type_keys, '_changed_by');
             for (var src_type_idx in src_type_keys) {
                 var src_type = src_type_keys[src_type_idx];
                 for (var src_obj in components[component][src_type]) {
@@ -105,6 +121,7 @@ var Graph = function (process_object) {
                     var connected = components[component][src_type][src_obj]._connected;
                     if (typeof connected === 'undefined') connected = false;
                     if (!connected) {
+//                        console.log(component + '/' + src_type + '/' + src_obj);
                         //model hasn't been created yet
                         var mdl = Models['component.' + src_type](src_obj);
                         components[component][src_type][src_obj]._model = mdl;
@@ -134,13 +151,16 @@ var Graph = function (process_object) {
                         });
                         scope.Models._requires_organization[component].links.push(child_model); //organize
                         scope.graph.addCell(link);
-                        
                         if(src_type=='outputs'){
                             if(typeof parent_model._SensorML.pass_thru === 'undefined') parent_model._SensorML.pass_thru = [];
                             parent_model._SensorML.pass_thru.push(child_model);
+                            components[component][src_type][src_obj]._changed_by = component + '.' + src_type + '.' + src_obj;
+                            components[component][src_type][src_obj]._parent = component;
                         }else{
                             if(typeof child_model._SensorML.pass_thru === 'undefined') child_model._SensorML.pass_thru = [];
                             child_model._SensorML.pass_thru.push(parent_model);
+                            components[component][src_type][src_obj]._changes = component + '.' + src_type + '.' + src_obj;
+                            components[component][src_type][src_obj]._parent = component;
                         }
                     }
 
@@ -214,11 +234,6 @@ var Graph = function (process_object) {
                 bottom: 10
             }
         });
-        
-        scope.Models.Organize_Groups();
-        scope._constraints();
-        scope.Models.Style();
-        scope.Models.HTML();
     }
     this.Models.Style = function () {
         //this retroactively colors the nodes based on whether or not they're connected or not
@@ -266,27 +281,33 @@ var Graph = function (process_object) {
         }
     }
     this.Models.HTML = function () {
+        var offset = $('#'+scope.div).offset();
+        var top = offset.top;
+        var left = offset.left;
         for(var component in scope.Models._requires_organization){
             var models = scope.Models._requires_organization[component].elements;
             for(var model in models){
                 if(!models[model]._SensorML.parent){
+                    
                     var name = models[model]._SensorML.name;
+//                    console.log(name);
+//                    console.log(models[model]);
                     //This may present an issue when we have elements named the same thing
                     //However, I could add a reference to the parent after the model has been created
                     var value = models[model]._SensorML.value;
                     if(value == null) value = 'N/A';
                     var id = models[model].id;
+                    
                     var html = '<div id="'+name+'">';
                     html = html + '<input id="'+name+'_input" value="'+value+'"></input>'
                     html = html + '</div>'
                     $('body').append(html);
-                    
                     var xPos = models[model].attributes.position.x;
                     var yPos = models[model].attributes.position.y;
                     var width = models[model].attributes.size.width;
                     $('#'+name).css('position','absolute');
                     $('#'+name).css('left',xPos+'px');
-                    $('#'+name).css('top',yPos+'px');
+                    $('#'+name).css('top',(top+yPos)+'px');
                     $('#'+name).css('width',width+'px');
                     $('#'+name+'_input').css('position','relative');
                     $('#'+name+'_input').css('left','15px');
@@ -298,53 +319,80 @@ var Graph = function (process_object) {
                         $('#'+name).css('left',position.x+'px');
                         $('#'+name).css('top',position.y+'px');
                     });
-                    
-                    
                 }
             }
         }
-        //travel the pass_thrus and find the linkage for event handling
-        //TODO: THIS NEEDS TO BE RECURSIVE... WILL FAIL FOR DIFFERENTLY STRUCTURED PROCESSES
-        var inputs = scope.process_object[scope.process].inputs;
+    }
+    this.Models.Eventing = function(parent_function){
         var define_passthrus = function(inputs){
             for(var input in inputs){
                 var model = inputs[input]._model
                 var triggers = {};
-                if(typeof model !== 'undefined' && typeof model._SensorML.pass_thru !== 'undefined'){
+                if(typeof model !== 'undefined'){
                     var pass_thru = model._SensorML.pass_thru[0];
+//                    console.log(pass_thru);
                     var source_component_name = pass_thru._SensorML.name;
                     var target_component_name = pass_thru._SensorML.pass_thru[0]._SensorML.name;
                     var target_nodes = pass_thru._SensorML.pass_thru[0]._SensorML.pass_thru;
                     triggers[input] = [];
                     for(var target_node in target_nodes){
                         var target_node_name = target_nodes[target_node]._SensorML.name;
-                        console.log('Input: '+input+' passes through it\'s parent '+source_component_name+', then '+target_component_name+', and ends up at '+target_node_name);
+//                        console.log('Input: '+input+' passes through it\'s parent '+source_component_name+', then '+target_component_name+', and ends up at '+target_node_name);
                         triggers[input].push(target_node_name);
                     }
                     model._SensorML.triggers = triggers[input];
                     //event handling
                     //var name = model._SensorML.name;
+                    var changes = inputs[input]._changes;
+                    var parent = inputs[input]._parent;
+                    if(typeof changes === 'undefined' || typeof parent === 'undefined') return console.log('ERROR: Please alert dev team.');
+                    (function(inp,changes,parent){
+                        $('#'+inp+'_input').on('change',function(){
+                            var name = this.id.split('_')[0];
+                            var value = $(this).val();
+                            parent_function(name,value,parent,changes);
+//                            console.log('Value of "'+name+'" belongs to "'+parent+'" changed to: '+value+'... which will affect: '+changes);
+                        });
+                    })(input,changes,parent)
                     
-                    $('#'+input+'_input').on('change',function(){
-                        var name = this.id.split('_')[0];
-                        var value = $(this).val();
-                        console.log('Value of "'+name+'" changed to: '+value);
-                        for(var trig in triggers[name]){
-                            console.log('Element "'+name+'" is triggering Element "'+triggers[name][trig]+'" with a value of '+value);
-                            $('#'+triggers[name][trig]+'_input').val(value).trigger('change');
-                        }
-                    });
                 }
+                //The following section has been removed since we're not interested in a "waterfall" effect
+//                if(typeof model !== 'undefined' && typeof model._SensorML.pass_thru !== 'undefined'){
+//                    var pass_thru = model._SensorML.pass_thru[0];
+//                    var source_component_name = pass_thru._SensorML.name;
+//                    var target_component_name = pass_thru._SensorML.pass_thru[0]._SensorML.name;
+//                    var target_nodes = pass_thru._SensorML.pass_thru[0]._SensorML.pass_thru;
+//                    triggers[input] = [];
+//                    for(var target_node in target_nodes){
+//                        var target_node_name = target_nodes[target_node]._SensorML.name;
+//                        console.log('Input: '+input+' passes through it\'s parent '+source_component_name+', then '+target_component_name+', and ends up at '+target_node_name);
+//                        triggers[input].push(target_node_name);
+//                    }
+//                    model._SensorML.triggers = triggers[input];
+//                    //event handling
+//                    //var name = model._SensorML.name;
+//                    
+//                    $('#'+input+'_input').on('change',function(){
+//                        var name = this.id.split('_')[0];
+//                        var value = $(this).val();
+//                        console.log('Value of "'+name+'" changed to: '+value);
+//                        for(var trig in triggers[name]){
+//                            console.log('Element "'+name+'" is triggering Element "'+triggers[name][trig]+'" with a value of '+value);
+//                            $('#'+triggers[name][trig]+'_input').val(value).trigger('change');
+//                        }
+//                    });
+//                }
                 
             }
         }
+        var inputs = scope.process_object[scope.process].inputs;
         define_passthrus(inputs);
         for(var component in scope.process_object[scope.process].components ){
             var inputs = scope.process_object[scope.process].components[component].inputs;
-            var outputs = scope.process_object[scope.process].components[component].outputs;
+            //var outputs = scope.process_object[scope.process].components[component].outputs;
             var parameters = scope.process_object[scope.process].components[component].parameters;
             if(typeof inputs !== 'undefined') define_passthrus(inputs);
-            if(typeof outputs !== 'undefined') define_passthrus(outputs);
+            //if(typeof outputs !== 'undefined') define_passthrus(outputs);
             if(typeof parameters !== 'undefined') define_passthrus(parameters);
             
         }
@@ -385,8 +433,23 @@ var Graph = function (process_object) {
 
         }
     }
-    //This function constrains each element inside their own parent object
-    this._constraints = function () {
+    this._init = (function () {
+        scope.graph = new joint.dia.Graph;
+        scope.paper = new joint.dia.Paper({
+            el: $('#'+div),
+            width: window.innerWidth * 0.99,
+            height: window.innerHeight * 0.99,
+            gridSize: 1,
+            model: scope.graph
+        });
+        scope.link_style = {
+            name: 'metro',
+            args: {
+    //            startDirections: ['top'],
+    //            endDirections: ['bottom'],
+    //            excludeTypes: ['myNamespace.MyCommentElement']
+            }
+        };
         scope.graph.on('change:size', function (cell, newPosition, opt) {
             if (opt.skipParentHandler) return;
             if (cell.get('embeds') && cell.get('embeds').length) {
@@ -428,5 +491,5 @@ var Graph = function (process_object) {
                 skipParentHandler: true
             });
         });
-    }
+    })();
 }

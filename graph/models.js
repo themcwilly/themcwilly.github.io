@@ -4,6 +4,11 @@ Models._colors = {
     inputs: '#66FF33',
     outputs: '#E74C3C'
 }
+Models._attach_attributes = function(obj,atts){
+    for(var att in atts){
+        obj[att] = atts[att];
+    }
+}
 Models._template = function (name, value, attrs) {
     var val = '';
     if (typeof value !== 'undefined' && value != '') val = value;
@@ -33,7 +38,7 @@ Models._template = function (name, value, attrs) {
     });
     return el;
 }
-Models['component.inputs'] = function(name){
+Models['component.inputs'] = function(name,sensorML){
     var mdl = Models._template(name, '', {
         rect: {
             rx: 2,
@@ -46,9 +51,10 @@ Models['component.inputs'] = function(name){
     mdl._SensorML = {};
     mdl._SensorML.name = name;
     mdl._SensorML.parent = false;
+    if(typeof sensorML === 'object') Models._attach_attributes(mdl._SensorML,sensorML);
     return mdl;
 }
-Models['component.outputs'] = function(name){
+Models['component.outputs'] = function(name,sensorML){
     var mdl = Models._template(name, '', {
         rect: {
             rx: 2,
@@ -61,9 +67,10 @@ Models['component.outputs'] = function(name){
     mdl._SensorML = {};
     mdl._SensorML.name = name;
     mdl._SensorML.parent = false;
+    if(typeof sensorML === 'object') Models._attach_attributes(mdl._SensorML,sensorML);
     return mdl;
 }
-Models['component.parameters'] = function(name){
+Models['component.parameters'] = function(name,sensorML){
     //return Models.Test(name,100);
     
     var mdl = Models._template(name, '', {
@@ -78,13 +85,14 @@ Models['component.parameters'] = function(name){
     mdl._SensorML = {};
     mdl._SensorML.name = name;
     mdl._SensorML.parent = false;
+    if(typeof sensorML === 'object') Models._attach_attributes(mdl._SensorML,sensorML);
     return mdl;
 }
-Models['parent.inputs'] = function(name){
-    return Models['component.inputs'](name);
+Models['parent.inputs'] = function(name,sensorML){
+    return Models['component.inputs'](name,sensorML);
 }
-Models['parent.outputs'] = function(name){
-    return Models['component.outputs'](name);
+Models['parent.outputs'] = function(name,sensorML){
+    return Models['component.outputs'](name,sensorML);
 }
 
 Models.Component = function (name, inputs, outputs, x, y, width, height) {

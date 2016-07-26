@@ -14,36 +14,31 @@
     <script src="graph/graph_class.js"></script>
     <script src="graph/models.js"></script>
     <script src="sensorML_parse.js"></script>
+    <script src="Graph_API.js"></script>
 
     <link rel="stylesheet" type="text/css" href="css/joint.min.css">
 
 </head>
 
 <body>
+    <h2>Link Information:</h2>
+    <b>IMPORT: </b>
+    <input id="import_link" value="https://themcwilly.github.io/data_files/AggregateProcess.txt" style="width:400px;" />
+    <button id="import_link_button">Import</button><br>
+    <b>From File:</b>
+    <input type="file" id="fileLoader" name="files" title="Load File" />
+    <input type="button" id="btnOpenFileDialog" value = "Import XML"  />
+    <br>
+    <b>EXPORT: </b>
+    <input id="export_link" value="Export address goes here" style="width:400px;" />
+    <button id="export_link_button">Import</button>
     <div id="paper-create"></div>
-    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>
-    
+<!--    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>-->
 </body>
 
 <script>
-    var graph;
-    jQuery.get('data_files/AggregateProcess.txt', function (data) {
-        data = jQuery.parseXML(data);
-        //convert xml to json
-        var json = xmlToJson(data);
-        console.log('Parsed XML to JSON:');
-        console.log(json);
-        //Refining incoming data
-        var refined = sensorMLhandler(json);
-        console.log('Refined for SensorML:');
-        console.log(refined);
-        //Creating a Process Flow Diagram
-        graph = new Graph(refined);
-        graph.Models.Create();
-        graph.Models.Connect();
-        graph.Models.PortAttachments();
-        graph.Models.DirectedGraph();
-    })
+    var API = new Graph_API();
+    API.Set.Element('paper-create');
 </script>
 
 </html>

@@ -1,6 +1,6 @@
 ## ProcessFlow
 * Devloped by: Brett McWilliams
-ProcessFlow is an add-on to the existing OSH(http://opensensorhub.org/page/homepage) architecture that attempts to visualize process chains currently existing in XML format. This will be and adjuvant to the XML editor(~LINK~)
+* ProcessFlow is an add-on to the existing OSH(http://opensensorhub.org/page/homepage) architecture that attempts to visualize process chains currently existing in XML format. This will be and adjuvant to the XML editor(~LINK~)
 
 ## Credited Libraries
 * jointjs (http://jointjs.com)
@@ -25,7 +25,7 @@ MIT License (https://opensource.org/licenses/MIT)
 ### v1.0 
 * Initial Commit: Setting up the process flow diagram using JointJS
 
-### v1.2016.07.14   
+### v1.2016.07.20   
 * Updated graph so that it dynamically expands as user moves nodes
 * Updated the license
 * Included credits to external libraries
@@ -35,3 +35,12 @@ MIT License (https://opensource.org/licenses/MIT)
 * Wrote code to re-organize nodes that were subjected to improper placement by the Directed Graph (The DG only organizes as a function of the whole graph... not as a function of which nodes are contained in which groups.)
 * Wrote code to retroactively modify node colors based on their type (input,output,parameter)
 * Implemented eventing that will trigger a "waterfall" effect determined by the chain... and, as a result, change values to other nodes
+
+### v1.2016.07.26   
+* Removed "waterfall" effect
+* Added ability to import from file as well as a URL
+* Add POST function to post changes - only post being done is updating the users input values
+* Updated CSS to account for embedding the graph in nested elements
+* Added test functionality to home page
+* Next version will be able to update the XML values and output to server.. as well as contain user-specific changes
+* Began writing generic API for simple functions
