@@ -1,3 +1,150 @@
+var enforcer = function(object,master){
+    object.__assign_prop = function(prop_name,value){
+        object[prop_name] = value;
+        if(typeof master.value === 'undefined'){
+            master.value = {
+                __prefix: "swe",
+                __text: value.toString()
+            }
+        }else{
+            master.value.__text = value.toString();
+        }
+//        console.log('I should have updated!!');
+//        console.log(master);
+//        console.log(object);
+    }
+}
+var settings = function(object,master){
+    object.__save_settings = function(){
+        var position = object._model.attributes.position;
+        if(typeof master.Preferences === 'undefined'){
+            master.Preferences = {
+                __prefix: "sml",
+                __text: ""
+            }
+        }
+        master.Preferences.__text = position.x+","+position.y;
+        console.log('I should have updated!!');
+        console.log(master);
+        console.log(object);
+    }
+}
+var sensorMLhandler = function (json) {
+    var object = {};
+    for (var key in json) {
+        if (key == 'AggregateProcess') {
+            object[json[key]['name']['__text']] = {
+                components: componentHandler(json[key]),
+                connections: connectionHandler(json[key]),
+                inputs: getOutputsAndInputs(json[key]['inputs']['InputList'], 'input'),
+                outputs: getOutputsAndInputs(json[key]['outputs']['OutputList'], 'output')
+            }
+        }
+    }
+    return object;
+}
+var getOutputsAndInputs = function (inputs, type) {
+    var list = {};
+    for (var input in inputs) {
+        if (input == type) {
+            if (typeof inputs[input].push !== 'undefined') {
+                for (var j = 0; j < inputs[input].length; j++) {
+                    list[ inputs[input][j]['_name'] ] = {};
+                    enforcer(list[ inputs[input][j]['_name'] ],inputs[input][j]['Quantity']);
+                    settings(list[ inputs[input][j]['_name'] ],inputs[input][j]);
+                }
+            } else {
+                list[ inputs[input]['_name'] ] = {};
+                enforcer(list[ inputs[input]['_name'] ],inputs[input]['Quantity']);
+                settings(list[ inputs[input]['_name'] ],inputs[input]);
+            }
+
+        }
+    }
+    return list;
+}
+var getParameters = function (params) {
+    var list = {};
+    for (var param in params) {
+        if (param == 'parameter') {
+            if (typeof params[param]['DataRecord'] !== 'undefined') {
+                var field = params[param]['DataRecord']['field'];
+                if (typeof field.push === 'undefined') {
+                    list[field['_name']] = { value: field['Quantity']['value']['__text']};
+                    var shallow = jQuery.extend({},params[param]['DataRecord']['field']['Quantity']);
+                    enforcer(list[field['_name']],shallow);
+                } else {
+                    for (var k = 0; k < field.length; k++) {
+                        list[field[k]['_name']] = {value: field[k]['Quantity']['value']['__text']};
+                        console.log(list[field[k]['_name']]);
+                        console.log(params[param]['DataRecord']['field'][k]['Quantity']);
+                        var shallow = jQuery.extend({},params[param]['DataRecord']['field'][k]['Quantity']);
+                        enforcer(list[field[k]['_name']],shallow);
+                    }
+                }
+            } else if (typeof params[param]['Quantity'] !== 'undefined') {
+                list[params[param]['_name']] ={
+                    value: params[param]['Quantity']['value']['__text']
+                }
+                var shallow = jQuery.extend({},params[param]['Quantity']);
+                enforcer(list[params[param]['_name']],shallow);
+            }
+        }
+    }
+    return list;
+}
+var componentHandler = function (obj) {
+    var components = {};
+    var componentsList = obj['components']['ComponentList']['component'];
+    for (var i = 0; i < componentsList.length; i++) {
+//        var componentObj = jQuery.extend(true, {}, componentsList[i]);
+        var componentObj = componentsList[i];
+        var component = {
+            inputs: [],
+            outputs: []
+        };
+        console.log(componentObj);
+        if(typeof componentObj['_xlink:href'] !== 'undefined'){
+            console.log(componentObj['_xlink:href']);
+            jQuery.get(componentObj['_xlink:href'],function(data){
+                var string = xmlToString(data);
+                console.log(string);
+                console.log( xml2json() );
+            })
+            
+        }
+        var inputs = componentObj['SimpleProcess']['inputs']['InputList'];
+        var outputs = componentObj['SimpleProcess']['outputs']['OutputList'];
+        var params = componentObj['SimpleProcess']['parameters']['ParameterList'];
+        var name = componentObj['_name'];
+        components[name] = {
+            inputs: getOutputsAndInputs(inputs, 'input'),
+            outputs: getOutputsAndInputs(outputs, 'output'),
+            parameters: getParameters(params)
+        }
+    }
+    return components;
+}
+var connectionHandler = function (obj) {
+    var connections = [];
+    var connectionsList = obj['connections']['ConnectionList']['connection'];
+    for (var i = 0; i < connectionsList.length; i++) {
+        var source_link  =connectionsList[i]['Link']['source']['_ref'];
+        var destination_link = connectionsList[i]['Link']['destination']['_ref'];
+        connections.push({
+            source: source_link,
+            destination: destination_link
+        });
+    }
+    return connections;
+}
+
+
+
+
+/*
+
+
 //A SIMPLE XML TO JSON CONVERTER, TAILORED TO SensorML 2.0
 var xmlToJson = function(xml) {
     // Create the return object
@@ -147,3 +294,4 @@ var connectionHandler = function (obj) {
     }
     return connections;
 }
+*/

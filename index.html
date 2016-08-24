@@ -1,44 +1,39 @@
+<!DOCTYPE html>
 <html>
-<meta charset="utf-8">
+	<head>
+		<title>three.js css3d - periodic table</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		
+	</head>
+	<body>
+        <link rel="stylesheet" type="text/css" href="css/css.css">
+		<script src="libs/jquery.min.js"></script>
+		<script src="libs/three.js"></script>
+		<script src="libs/CSS3DRenderer.js"></script>
+		<script src="libs/TrackballControls.js"></script>
+		<script src="libs/tween.js"></script>
+        <script src="libs/raphael-min.js"></script>
+		<script src="libs/dracula_graph.js"></script>
+		<script src="Graph.js"></script>
+		<script src="eventing.js"></script>
+        <span id="ruler"></span> 
+		<div id="container"></div>
+		<div id="info">INFO DIV</div>
+		<div id="menu">
+			<button id="table">TEST ORGANIZE</button>
+			<button id="sphere">Button 2</button>
+			<button id="helix">Button 3</button>
+			<button id="grid">Button 4</button>
+		</div>
 
-<head>
-    <script src="prototypes.js"></script>
-    <script src='libs/underscore-min.js'></script>
-    <script src='libs/jquery.min.js'></script>
-    <script src='libs/lodash.min.js'></script>
-    <script src='libs/backbone-min.js'></script>
-    <script src='libs/joint.min.js'></script>
-    <script src='graph/graphlib.core.js'></script>
-    <script src='graph/dagre.core.js'></script>
-    <script src='graph/jointjs.directedgraph.js'></script>
-    <script src="graph/graph_class.js"></script>
-    <script src="graph/models.js"></script>
-    <script src="sensorML_parse.js"></script>
-    <script src="Graph_API.js"></script>
-
-    <link rel="stylesheet" type="text/css" href="css/joint.min.css">
-
-</head>
-
-<body>
-    <h2>Link Information:</h2>
-    <b>IMPORT: </b>
-    <input id="import_link" value="https://themcwilly.github.io/data_files/AggregateProcess.txt" style="width:400px;" />
-    <button id="import_link_button">Import</button><br>
-    <b>From File:</b>
-    <input type="file" id="fileLoader" name="files" title="Load File" />
-    <input type="button" id="btnOpenFileDialog" value = "Import XML"  />
-    <br>
-    <b>EXPORT: </b>
-    <input id="export_link" value="Export address goes here" style="width:400px;" />
-    <button id="export_link_button">Import</button>
-    <div id="paper-create"></div>
-<!--    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>-->
-</body>
-
-<script>
-    var API = new Graph_API();
-    API.Set.Element('paper-create');
-</script>
-
+		<script>
+            var graph = new Process_Graph();
+            
+            
+            document.getElementById('table').onmouseup = function(){
+                graph.Organize_Graph();
+            }
+		</script>
+	</body>
 </html>
