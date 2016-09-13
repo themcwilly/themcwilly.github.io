@@ -1,39 +1,82 @@
-<!DOCTYPE html>
 <html>
-	<head>
-		<title>three.js css3d - periodic table</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		
-	</head>
-	<body>
-        <link rel="stylesheet" type="text/css" href="css/css.css">
-		<script src="libs/jquery.min.js"></script>
-		<script src="libs/three.js"></script>
-		<script src="libs/CSS3DRenderer.js"></script>
-		<script src="libs/TrackballControls.js"></script>
-		<script src="libs/tween.js"></script>
-        <script src="libs/raphael-min.js"></script>
-		<script src="libs/dracula_graph.js"></script>
-		<script src="Graph.js"></script>
-		<script src="eventing.js"></script>
-        <span id="ruler"></span> 
-		<div id="container"></div>
-		<div id="info">INFO DIV</div>
-		<div id="menu">
-			<button id="table">TEST ORGANIZE</button>
-			<button id="sphere">Button 2</button>
-			<button id="helix">Button 3</button>
-			<button id="grid">Button 4</button>
-		</div>
+<meta charset="utf-8">
 
-		<script>
-            var graph = new Process_Graph();
-            
-            
-            document.getElementById('table').onmouseup = function(){
-                graph.Organize_Graph();
-            }
-		</script>
-	</body>
+<head>
+    <script src="prototypes.js"></script>
+    <script src='libs/underscore-min.js'></script>
+    <script src='libs/dat.gui.js'></script>
+    <script src='libs/jquery.min.js'></script>
+    <script src='libs/lodash.min.js'></script>
+    <script src='libs/backbone-min.js'></script>
+    <script src='libs/joint.min.js'></script>
+    <script src='graph/graphlib.core.js'></script>
+    <script src='graph/dagre.core.js'></script>
+    <script src='graph/jointjs.directedgraph.js'></script>
+    <script src="graph/graph_class.js"></script>
+    <script src="graph/models.js"></script>
+    <script src="sensorML_parse.js"></script>
+    <script src="xml2json.js"></script>
+    <script src="Menu.js"></script>
+    <script src="Graph_API.js"></script>
+    <script src="Graph.Component.js"></script>
+    <script src="Graph.Port.js"></script>
+    <script src="Graph.Link.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="css/joint.min.css">
+    <link rel="stylesheet" type="text/css" href="css.css">
+
+</head>
+
+<body>
+<!--
+    <h2>Link Information:</h2>
+    <b>IMPORT: </b>
+    <input id="import_link" value="https://themcwilly.github.io/data_files/AggregateProcess.txt" style="width:400px;" />
+    <button id="import_link_button">Import</button><br>
+    <b>From File:</b>
+    <input type="file" id="fileLoader" name="files" title="Load File" />
+    <input type="button" id="btnOpenFileDialog" value = "Import XML"  />
+    <br>
+    <b>EXPORT: </b>
+    <input id="export_link" value="Export address goes here" style="width:400px;" />
+    <button id="export_link_button">Export</button>
+    <br>
+    <button id="save_button">Save XML</button>
+-->
+    
+    
+    <div id="paper-create"></div>
+<!--    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>-->
+</body>
+
+<script>
+    var API = new Graph_API();
+</script>
+
+<script>
+    setTimeout(function(){
+        API.Graph.Component.New('test1',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+        API.Graph.Component.New('test2',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+        API.Graph.Component.New('test3',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+        API.Graph.Component.New('test4',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+        API.Graph.Component.New('test5',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+        API.Graph.InOut.New('input1','inputs');
+        API.Graph.InOut.New('output1','outputs');
+    },100);
+    setTimeout(function(){
+        API.Graph.components['test1'].Add.Link('o1','test2.i1');
+        API.Graph.components['test3'].Add.Link('o3','test1.i2');
+        API.Graph.components['test3'].Add.Link('o2','test2.i2');
+        API.Graph.components['test4'].Add.Link('i1','test1.o1');
+        API.Graph.components['test4'].Add.Link('i2','test2.o1');
+        API.Graph.components['test4'].Add.Link('o1','test5.p1');
+        API.Graph.components['test4'].Add.Link('o1','test5.i1');
+        API.Graph.components['input1'].Add.Link('input1','test3.i1');
+        API.Graph.components['output1'].Add.Link('output1','test5.o1');
+    },500);
+    setTimeout(function(){
+        API.Graph.Directed_Graph();
+    },1000);
+</script>
+
 </html>
