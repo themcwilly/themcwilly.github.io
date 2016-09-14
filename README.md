@@ -1,6 +1,6 @@
 ## ProcessFlow
 * Devloped by: Brett McWilliams
-* ProcessFlow is an add-on to the existing OSH(http://opensensorhub.org/page/homepage) architecture that attempts to visualize process chains currently existing in XML format. This will be and adjuvant to the XML editor(~LINK~)
+* ProcessFlow is an add-on to the existing OSH(http://opensensorhub.org/page/homepage) architecture that attempts to visualize process chains currently existing in XML format. This will be and adjuvant to the XML editor(http://opensensorhub.github.io/sensorml-editor/SensorMLEditor.html)
 
 ## Credited Libraries
 * jointjs (http://jointjs.com)
@@ -49,6 +49,6 @@ MIT License (https://opensource.org/licenses/MIT)
 * Changed XML to JSON library, making it easier to store values to push back to XML format
 * Added functions to each compoent that has a shallow-copied reference to the original JSON, making updating the orignal XML extremly simple
 
-### v1.2016.09.12
-* Class structures have been completely rewritten to allow for simpler access by outside objects
-* Started building a menu that allows for adding, removing and customizing syles of components and nodes
+### v2.0 
+* Complete Class redesign making it easier to add, remove and modify properties of the graph
+* Menu added

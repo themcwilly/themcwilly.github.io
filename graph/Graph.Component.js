@@ -1,3 +1,24 @@
+/*
+    Copyright (c) 2015-2016 OpenSensorHub
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+*/
 var Component = function (_GLOBAL, params) {
     var scope = this;
     this.graph = _GLOBAL.graph;
@@ -39,6 +60,7 @@ var Component = function (_GLOBAL, params) {
         scope.css[type].push(css_link);
         scope.component.updatePortsAttrs();
         scope.ports[type][name] = new Port(scope, name, type, css_link);
+        scope.Beautify();
 
     }
     this.Add.Link = function(from_port,to){
@@ -70,6 +92,7 @@ var Component = function (_GLOBAL, params) {
         scope.links[link_name] = new_link;
         scope._GLOBAL.components[to_comp].links[link_name] = new_link;
         scope._GLOBAL.maps.links[link.id] = link_name;
+        scope._GLOBAL.Directed_Graph();
     }
     
     this.Remove = {};

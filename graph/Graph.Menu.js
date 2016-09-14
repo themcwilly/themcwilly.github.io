@@ -1,3 +1,24 @@
+/*
+    Copyright (c) 2015-2016 OpenSensorHub
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+*/
 var Menu = function(_GLOBAL){
     var scope = this;
     this._GLOBAL = _GLOBAL;
@@ -139,12 +160,18 @@ var Menu = function(_GLOBAL){
             }
             this.name = '';
             
+            this.organize = function(){
+                scope._GLOBAL.Graph.Directed_Graph();
+            }
+            
             this.import_link = 'https://themcwilly.github.io/data_files/AggregateProcess.txt';
             this.import_from_link = function(){
                 if(this.import_link=='') return alert('Please supply a link.');
-                console.log('Function not yet active... will be importing from:');
-                console.log(this.import_link);
-                alert('Not yet active... stay tuned.');
+                scope._GLOBAL.SensorML.XML.Import_Link(this.import_link);
+            }
+            
+            this.demo = function(){
+                DEMO();
             }
         }
         var menu = new func();
@@ -152,9 +179,16 @@ var Menu = function(_GLOBAL){
         new_comp_folder.add(menu,'newComponent').name('Add Component');
         new_comp_folder.open();
         
+        gui.add(menu,'organize').name('Organize Graph');
+        
         var io_folder = gui.addFolder('Data IO');
         io_folder.add(menu,'import_link').name('Import Link');
         io_folder.add(menu,'import_from_link').name('Import');
+        
+        
+        gui.add(menu,'demo').name('Demonstration');
+        
+        
     }
     
     this._newMenu = function(){

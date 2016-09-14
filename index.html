@@ -9,18 +9,18 @@
     <script src='libs/lodash.min.js'></script>
     <script src='libs/backbone-min.js'></script>
     <script src='libs/joint.min.js'></script>
-    <script src='graph/graphlib.core.js'></script>
-    <script src='graph/dagre.core.js'></script>
-    <script src='graph/jointjs.directedgraph.js'></script>
-    <script src="graph/graph_class.js"></script>
-    <script src="graph/models.js"></script>
-    <script src="sensorML_parse.js"></script>
-    <script src="xml2json.js"></script>
-    <script src="Menu.js"></script>
-    <script src="Graph_API.js"></script>
-    <script src="Graph.Component.js"></script>
-    <script src="Graph.Port.js"></script>
-    <script src="Graph.Link.js"></script>
+    <script src="libs/xml2json.js"></script>
+    <script src='libs/graphlib.core.js'></script>
+    <script src='libs/dagre.core.js'></script>
+    <script src='libs/jointjs.directedgraph.js'></script>
+    
+    <script src="graph/Graph.js"></script>
+    <script src="graph/Graph_API.js"></script>
+    <script src="graph/Graph.Component.js"></script>
+    <script src="graph/Graph.Port.js"></script>
+    <script src="graph/Graph.Link.js"></script>
+    <script src="graph/Graph.SensorML.js"></script>
+    <script src="graph/Graph.Menu.js"></script>
 
     <link rel="stylesheet" type="text/css" href="css/joint.min.css">
     <link rel="stylesheet" type="text/css" href="css.css">
@@ -54,29 +54,32 @@
 </script>
 
 <script>
-    setTimeout(function(){
-        API.Graph.Component.New('test1',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-        API.Graph.Component.New('test2',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-        API.Graph.Component.New('test3',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-        API.Graph.Component.New('test4',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-        API.Graph.Component.New('test5',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-        API.Graph.InOut.New('input1','inputs');
-        API.Graph.InOut.New('output1','outputs');
-    },100);
-    setTimeout(function(){
-        API.Graph.components['test1'].Add.Link('o1','test2.i1');
-        API.Graph.components['test3'].Add.Link('o3','test1.i2');
-        API.Graph.components['test3'].Add.Link('o2','test2.i2');
-        API.Graph.components['test4'].Add.Link('i1','test1.o1');
-        API.Graph.components['test4'].Add.Link('i2','test2.o1');
-        API.Graph.components['test4'].Add.Link('o1','test5.p1');
-        API.Graph.components['test4'].Add.Link('o1','test5.i1');
-        API.Graph.components['input1'].Add.Link('input1','test3.i1');
-        API.Graph.components['output1'].Add.Link('output1','test5.o1');
-    },500);
-    setTimeout(function(){
-        API.Graph.Directed_Graph();
-    },1000);
+    var DEMO = function(){
+        setTimeout(function(){
+            API.Graph.Component.New('test1',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+            API.Graph.Component.New('test2',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+            API.Graph.Component.New('test3',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+            API.Graph.Component.New('test4',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+            API.Graph.Component.New('test5',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
+            API.Graph.InOut.New('input1','inputs');
+            API.Graph.InOut.New('output1','outputs');
+        },100);
+        setTimeout(function(){
+            API.Graph.components['test1'].Add.Link('o1','test2.i1');
+            API.Graph.components['test3'].Add.Link('o3','test1.i2');
+            API.Graph.components['test3'].Add.Link('o2','test2.i2');
+            API.Graph.components['test4'].Add.Link('i1','test1.o1');
+            API.Graph.components['test4'].Add.Link('i2','test2.o1');
+            API.Graph.components['test4'].Add.Link('o1','test5.p1');
+            API.Graph.components['test4'].Add.Link('o1','test5.i1');
+            API.Graph.components['input1'].Add.Link('input1','test3.i1');
+            API.Graph.components['output1'].Add.Link('output1','test5.o1');
+        },500);
+        setTimeout(function(){
+            API.Graph.Directed_Graph();
+        },1000);
+    }
+    
 </script>
 
 </html>

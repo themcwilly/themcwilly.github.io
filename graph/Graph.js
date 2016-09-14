@@ -1,3 +1,24 @@
+/*
+    Copyright (c) 2015-2016 OpenSensorHub
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+*/
 var Graph = function (_GLOBAL) {
     //INITIALIZE VARIABLES
     var scope = this;
@@ -46,6 +67,18 @@ var Graph = function (_GLOBAL) {
         
         return 9999;
     }
+    this.Component.Add_Port = function(component,type,name){
+        if(typeof scope.components[component] === 'undefined') return;
+        scope.components[component].Add.Port(type,name);
+    }
+    this.Component.Add_Link = function(from, to){
+        var from_comp = from.split('.')[0];
+        var from_port = from.split('.')[1];
+        var to_comp = to.split('.')[0];
+        var to_port = to.split('.')[1];
+        if(typeof scope.components[from_comp] === 'undefined' || typeof scope.components[to_comp] === 'undefined') return;
+        scope.components[from_comp].Add.Link(from_port,to);
+    }
     this.Component.Select = function (name) {
         //console.log('"' + name + '" was clicked');
         scope._GLOBAL.Menu.Component(name);
@@ -56,7 +89,7 @@ var Graph = function (_GLOBAL) {
         if (typeof name === 'undefined' || name == '') return 'Please supply a valid name.';
         if (typeof scope.components[name] !== 'undefined') return name + ' has already been used.';
         var x = 100;
-        if(type=='outputs') x = window.innerWidth-100;
+        if(type=='outputs') x = window.innerWidth-200;
         var properties = {
             x: x,
             y: (window.innerHeight-500)*Math.random()+250,
@@ -94,7 +127,7 @@ var Graph = function (_GLOBAL) {
                     bottom: 10
                 }
         });
-        console.log(result);
+        //console.log(result);
     }
     
     
