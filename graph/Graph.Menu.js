@@ -164,10 +164,17 @@ var Menu = function(_GLOBAL){
                 scope._GLOBAL.Graph.Directed_Graph();
             }
             
-            this.import_link = 'https://themcwilly.github.io/data_files/AggregateProcess.txt';
+            //this.import_link = 'https://themcwilly.github.io/data_files/AggregateProcess.txt';
+            this.import_link = 'https://themcwilly.github.io/data_files/test.txt';
             this.import_from_link = function(){
                 if(this.import_link=='') return alert('Please supply a link.');
                 scope._GLOBAL.SensorML.XML.Import_Link(this.import_link);
+            }
+            
+            this.import_from_file = function(){
+                scope._GLOBAL.SensorML._read_file(function(file){
+                    scope._GLOBAL.SensorML.XML.Read(file);
+                });
             }
             
             this.demo = function(){
@@ -184,6 +191,7 @@ var Menu = function(_GLOBAL){
         var io_folder = gui.addFolder('Data IO');
         io_folder.add(menu,'import_link').name('Import Link');
         io_folder.add(menu,'import_from_link').name('Import');
+        io_folder.add(menu,'import_from_file').name('Import File');
         
         
         gui.add(menu,'demo').name('Demonstration');

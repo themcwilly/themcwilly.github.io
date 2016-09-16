@@ -31,107 +31,173 @@ var Graph = function (_GLOBAL) {
     this.mousedown = false;
     this.linkJustAdded = false;
     this.linkJustRemoved = false;
-
+    this.dragStartPosition;
+    
     this.components = {};
+    this.groups = {};
 
     this.maps = {
         links: {}
     }
-    
-    
+
+    this.leftovers = {
+        components: {},
+        links: []
+    } //these are links that defined components and ports that don't exist
+
+    this.Group = {};
+    this.Group.New = function (name) {
+        if (typeof name === 'undefined' || name == '') return 'Please supply a valid name.';
+        if (typeof scope.groups[name] !== 'undefined') return name + ' has already been used.';
+        scope.groups[name] = new Group(scope, name);
+    }
 
     this.Component = {};
-    this.Component.New = function (name,ports) {
+    this.Component.New = function (name, ports) {
         if (typeof name === 'undefined' || name == '') return 'Please supply a valid name.';
         if (typeof scope.components[name] !== 'undefined') return name + ' has already been used.';
         var properties = {
-            x: (window.innerWidth-500)*Math.random()+250,
-            y: (window.innerHeight-500)*Math.random()+250,
+            x: (window.innerWidth - 500) * Math.random() + 250,
+            y: (window.innerHeight - 500) * Math.random() + 250,
             name: name
         };
         var component = new Component(scope, properties)
         scope.components[name] = component;
-        
-        setTimeout(function(){
-            if(typeof ports === 'object'){
-                for(var port_type in ports){
-                    for(var i=0; i<ports[port_type].length; i++){
-                        scope.components[name].Add.Port(port_type,ports[port_type][i]);
+
+        setTimeout(function () {
+            if (typeof ports === 'object') {
+                for (var port_type in ports) {
+                    for (var i = 0; i < ports[port_type].length; i++) {
+                        scope.components[name].Add.Port(port_type, ports[port_type][i]);
                     }
                 }
             }
             scope.components[name].Beautify();
-        },100)
-        
-        
-        
+        }, 100)
+
+
+
         return 9999;
     }
-    this.Component.Add_Port = function(component,type,name){
-        if(typeof scope.components[component] === 'undefined') return;
-        scope.components[component].Add.Port(type,name);
+    this.Component.Add_Port = function (component, type, name) {
+        if (typeof scope.components[component] === 'undefined') return;
+        scope.components[component].Add.Port(type, name);
     }
-    this.Component.Add_Link = function(from, to){
+    this.Component.Add_Link = function (from, from_type, to, to_type) {
         var from_comp = from.split('.')[0];
         var from_port = from.split('.')[1];
         var to_comp = to.split('.')[0];
         var to_port = to.split('.')[1];
-        if(typeof scope.components[from_comp] === 'undefined' || typeof scope.components[to_comp] === 'undefined') return;
-        scope.components[from_comp].Add.Link(from_port,to);
+
+        console.log('LINK: ' + from + ' --> ' + to);
+
+        var good = true;
+        if (!scope.components[from_comp]) {
+            if (!scope.leftovers.components[from_comp]) scope.leftovers.components[from_comp] = {
+                inputs: [],
+                outputs: [],
+                parameters: []
+            };
+            scope.leftovers.components[from_comp][from_type].push(from_port);
+            good = false;
+        }
+        if (!scope.components[to_comp]) {
+            if (!scope.leftovers.components[to_comp]) scope.leftovers.components[to_comp] = {
+                inputs: [],
+                outputs: [],
+                parameters: []
+            };
+            scope.leftovers.components[to_comp][to_type].push(to_port);
+            good = false;
+        }
+        if (!good) {
+            scope.leftovers.links.push({
+                from: from,
+                from_type: from_type,
+                to: to,
+                to_type: to_type
+            });
+            return;
+        }
+
+        scope.components[from_comp].Add.Link(from_port, to);
+    }
+    this.Component.LeftOvers = function () {
+        var leftovers = jQuery.extend(true, {}, scope.leftovers);
+        scope.leftovers = {};
+        for (var component in leftovers.components) {
+            scope.Component.New(component, leftovers.components[component]);
+        }
+        setTimeout(function () {
+            for (var i = 0; i < leftovers.links.length; i++) {
+                var link_obj = leftovers.links[i];
+                scope.Component.Add_Link(link_obj.from, link_obj.from_type, link_obj.to, link_obj.to_type);
+            }
+            scope.Directed_Graph();
+        }, 2000);
     }
     this.Component.Select = function (name) {
         //console.log('"' + name + '" was clicked');
         scope._GLOBAL.Menu.Component(name);
     }
-    
+    this.Component.Remove = function () {
+        //Traverse links and nodes and remove all
+    }
+
     this.InOut = {};
-    this.InOut.New = function(name,type){
+    this.InOut.New = function (name, type) {
         if (typeof name === 'undefined' || name == '') return 'Please supply a valid name.';
         if (typeof scope.components[name] !== 'undefined') return name + ' has already been used.';
         var x = 100;
-        if(type=='outputs') x = window.innerWidth-200;
+        if (type == 'outputs') x = window.innerWidth - 200;
         var properties = {
             x: x,
-            y: (window.innerHeight-500)*Math.random()+250,
+            y: (window.innerHeight - 500) * Math.random() + 250,
             name: name,
-            io:true,
+            io: true,
             io_type: type
         };
         var component = new Component(scope, properties)
         scope.components[name] = component;
-        
+
         var port_type = 'inputs';
-        if(type == 'inputs') port_type = 'outputs';
-        setTimeout(function(){
-            scope.components[name].Add.Port(port_type,name);
-        },100);
-        
-        
-        
+        if (type == 'inputs') port_type = 'outputs';
+
+        setTimeout(function () {
+//            if (group) {
+//                console.log(type)
+//                scope.groups[group].Add_Component(name);
+//                return;
+//            }
+            scope.components[name].Add.Port(port_type, name);
+        }, 100);
+
+
+
         return 9999;
     }
-    
-    
-    
-    this.Directed_Graph = function(){
+
+
+
+    this.Directed_Graph = function () {
         var result = joint.layout.DirectedGraph.layout(scope.graph, {
-                setLinkVertices: false,
-                rankDir: 'LR',
-                rankSep: 150,
-                marginX: 50,
-                marginY: 50,
-                clusterPadding: {
-                    top: 30,
-                    left: 10,
-                    right: 10,
-                    bottom: 10
-                }
+            setLinkVertices: false,
+            rankDir: 'LR',
+            rankSep: 150,
+            marginX: 50,
+            marginY: 50,
+            clusterPadding: {
+                top: 30,
+                left: 10,
+                right: 10,
+                bottom: 10
+            }
         });
         //console.log(result);
     }
-    
-    
-    
+
+
+
 
     this._goodConnectionQ = function (source_component, target_component, source_port, target_port) {
         if (source_component == target_component) return false;
@@ -152,6 +218,56 @@ var Graph = function (_GLOBAL) {
             gridSize: 1,
             model: scope.graph
         });
+
+        var paper = scope.paper;
+        paper.on('blank:pointerdown',
+            function(event, x, y) {
+                scope.dragStartPosition = { x: x, y: y};
+            }
+        );
+        paper.on('cell:pointerup blank:pointerup', function(cellView, x, y) {
+            delete scope.dragStartPosition;
+        });
+        $("#paper-create").mousemove(function(event) {
+            if(scope.dragStartPosition) paper.setOrigin(event.offsetX - scope.dragStartPosition.x, event.offsetY - scope.dragStartPosition.y);
+        });
+
+        
+//        paper.$el.on('mousewheel DOMMouseScroll', function onMouseWheel(e) {
+//            //function onMouseWheel(e){
+//            e.preventDefault();
+//            e = e.originalEvent;
+//
+//            var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail))) / 50;
+//            var offsetX = (e.offsetX || e.clientX - $(this).offset().left);
+//
+//            var offsetY = (e.offsetY || e.clientY - $(this).offset().top);
+//            var p = offsetToLocalPoint(offsetX, offsetY);
+//            var newScale = V(paper.viewport).scale().sx + delta;
+//            console.log(' delta' + delta + ' ' + 'offsetX' + offsetX + 'offsety--' + offsetY + 'p' + p.x + 'newScale' + newScale)
+//            if (newScale > 0.4 && newScale < 2) {
+//                paper.setOrigin(0, 0);
+//                paper.scale(newScale, newScale, p.x, p.y);
+//            }
+//        });
+//
+//        function offsetToLocalPoint(x, y) {
+//            var svgPoint = paper.svg.createSVGPoint();
+//            svgPoint.x = x;
+//            svgPoint.y = y;
+//
+//            var pointTransformed = svgPoint.matrixTransform(paper.viewport.getCTM().inverse());
+//            return pointTransformed;
+//        }
+
+
+
+
+
+
+
+
+
         scope.graph.on('change:source change:target', function (link) {
             if (link.get('source').id && link.get('target').id) {
                 // both ends of the link are connected.
@@ -163,8 +279,8 @@ var Graph = function (_GLOBAL) {
         })
         scope.paper.on('cell:pointerup',
             function (cellView, evt, x, y) {
-                if(scope.linkJustRemoved) return;
-                
+                if (scope.linkJustRemoved) return;
+
                 //NOTE: when the pointer creates a link, it cannot access the node below it... this will only ever fire components and links
                 var base = cellView;
                 if (typeof cellView.sourceView !== 'undefined') { //link
@@ -198,13 +314,13 @@ var Graph = function (_GLOBAL) {
 
             }
         );
-//        scope.graph.on('add', function (cellView, collection, opt){
-//            //add only the NON-input/outputs so we can easily organize them
-//            var isLink = cellView.isLink();
-//            if(!isLink){
-//                scope.component_graph.addCell(cellView);
-//            }
-//        });
+        //        scope.graph.on('add', function (cellView, collection, opt){
+        //            //add only the NON-input/outputs so we can easily organize them
+        //            var isLink = cellView.isLink();
+        //            if(!isLink){
+        //                scope.component_graph.addCell(cellView);
+        //            }
+        //        });
         scope.graph.on('remove', function (cellView, collection, opt) {
             if (cellView.isLink()) {
                 // a link was removed  (cell.id contains the ID of the removed link)
@@ -212,25 +328,31 @@ var Graph = function (_GLOBAL) {
                 setTimeout(function () {
                     scope.linkJustRemoved = false;
                 }, 200);
-                var link_name  = scope.maps.links[cellView.id];
-                if(typeof link_name === 'undefined') return;
+                var link_name = scope.maps.links[cellView.id];
+                if (typeof link_name === 'undefined') return;
                 var from = link_name.split(':')[0].split('.')[0];
-                var to   = link_name.split(':')[1].split('.')[0];
+                var to = link_name.split(':')[1].split('.')[0];
                 delete scope.components[from].links[link_name];
                 delete scope.components[to].links[link_name];
                 scope._GLOBAL.Menu.selected = null;
                 scope._GLOBAL.Menu.Component(from);
                 scope.Directed_Graph();
-            }else{
+            } else {
                 scope.component_graph.removeCells([cellView]);
             }
         })
-        document.body.onmousedown = function () {
+        document.body.onmousedown = function (e) {
             scope.mousedown = true;
         }
         document.body.onmouseup = function () {
             scope.mousedown = false;
         }
+        
+        
+        
+        
+        
+        
     });
 }
 

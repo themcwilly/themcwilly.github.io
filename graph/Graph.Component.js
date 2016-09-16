@@ -53,7 +53,7 @@ var Component = function (_GLOBAL, params) {
         if (type == 'inputs' || type == 'parameters') port = 'inPorts';
         var existing_ports = scope.component.get(port);
         var existing_length = existing_ports.length;
-        if (existing_ports.indexOf(name) > -1) return console.log('Port(' + name + ') already exists.');
+        if (existing_ports.indexOf(name) > -1) return console.log('Port('+ type + ', ' + name + ') already exists for "'+scope.params.name+'".');
         existing_ports.push(name);
         var css_link = '.' + port + '>.port' + existing_length;
         scope.component.set(port, existing_ports);
@@ -65,16 +65,23 @@ var Component = function (_GLOBAL, params) {
     }
     this.Add.Link = function(from_port,to){
         //to --> component.port
+        var from_comp = scope.params.name;
         var   to_list =   to.split('.');
-        if(to_list.length != 2) return console.log('Adding a link requires links of length 2.');
+        if(to_list.length != 2) return console.log('!!!! WARNING !!!! Adding a link requires links of length 2.');
         var   to_comp =   to_list[0];
         var   to_port =   to_list[1];
-        if(scope.params.name==to_comp) return console.log('Components cannot be the same.');
+        if(scope.params.name==to_comp) return console.log('!!!! WARNING !!!! Components cannot be the same.');
         var link_name = scope.params.name+'.'+from_port+':'+to;
         if(scope._linkExistsQ(link_name)) return console.log('Link already defined');
         var to_component = scope._GLOBAL.components[to_comp];
-        if(typeof to_component === 'undefined') return console.log('That is not a defined component. Options are: '+Object.keys(scope._GLOBAL.components));
+        if(typeof to_component === 'undefined') return console.log('!!!! WARNING !!!! That is not a defined component. Options are: '+Object.keys(scope._GLOBAL.components));
+        var available_from_ports = _.flatten([Object.keys(scope.ports.inputs),Object.keys(scope.ports.outputs),Object.keys(scope.ports.parameters)]);
+        var available_to_ports = _.flatten([Object.keys(to_component.ports.inputs),Object.keys(to_component.ports.outputs),Object.keys(to_component.ports.parameters)]);
+        if(available_from_ports.indexOf(from_port)==-1) return console.log('!!!! WARNING !!!! "'+from_port+'" is not a defined port for "'+from_comp+'".\nOptions are: '+available_from_ports);
+        if(available_to_ports.indexOf(to_port)==-1) return console.log('!!!! WARNING !!!! "'+to_port+'" is not a defined port for "'+to_comp+'".\nOptions are: '+available_to_ports);
         to_component = to_component.component;
+        
+        if(!scope._GLOBAL.components[to_component.id])
         
         var link_object = {
             source: {
@@ -229,7 +236,8 @@ var Component = function (_GLOBAL, params) {
         if (!params.name) return console.log('Please supply name.');
         if (!params.inputs) params.inputs = [];
         if (!params.outputs) params.outputs = [];
-        var width = 100;
+        var width = params.name.width(12)*1.5;
+        if(width<100) width=100;
         var height = 100;
         if(params.io) height = 50;
         var component = new joint.shapes.devs.Model({
