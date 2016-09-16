@@ -52,3 +52,8 @@ MIT License (https://opensource.org/licenses/MIT)
 ### v2.0 
 * Complete Class redesign making it easier to add, remove and modify properties of the graph
 * Menu added
+
+### v2.2016.09.16
+* Added the ability to traverse links and dynamically add components to the graph from remote sources
+* Added ability to drag graph
+* Added ability for graph to dynamically create referenced components and ports that are availble in connections, but not in the inputs/outputs/components themselves

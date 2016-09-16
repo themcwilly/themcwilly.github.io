@@ -90,7 +90,13 @@ var Graph = function (_GLOBAL) {
         var to_port = to.split('.')[1];
 
         console.log('LINK: ' + from + ' --> ' + to);
-
+        
+        if(scope.components[from_comp] && !scope.components[from_comp].ports[from_port]) scope.Component.Add_Port(from_comp,from_type,from_port);
+        if(scope.components[to_comp] && !scope.components[to_comp].ports[to_port]) scope.Component.Add_Port(to_comp,to_type,to_port);
+        
+        
+        
+        
         var good = true;
         if (!scope.components[from_comp]) {
             if (!scope.leftovers.components[from_comp]) scope.leftovers.components[from_comp] = {
