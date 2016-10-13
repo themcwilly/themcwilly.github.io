@@ -13,7 +13,7 @@
     <script src='libs/graphlib.core.js'></script>
     <script src='libs/dagre.core.js'></script>
     <script src='libs/jointjs.directedgraph.js'></script>
-    
+
     <script src="graph/Graph.js"></script>
     <script src="graph/Graph_API.js"></script>
     <script src="graph/Graph.Group.js"></script>
@@ -29,7 +29,7 @@
 </head>
 
 <body>
-<!--
+    <!--
     <h2>Link Information:</h2>
     <b>IMPORT: </b>
     <input id="import_link" value="https://themcwilly.github.io/data_files/AggregateProcess.txt" style="width:400px;" />
@@ -45,42 +45,59 @@
     <button id="save_button">Save XML</button>
 -->
     <input id="file_browser" type="file" style="display:none" />
-    
+
     <div id="paper-create"></div>
-<!--    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>-->
+    <!--    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>-->
 </body>
 
 <script>
     var API = new Graph_API();
+    var base;
 </script>
 
 <script>
-    var DEMO = function(){
-        setTimeout(function(){
-            API.Graph.Component.New('test1',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-            API.Graph.Component.New('test2',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-            API.Graph.Component.New('test3',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-            API.Graph.Component.New('test4',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-            API.Graph.Component.New('test5',{inputs:['i1','i2'],parameters:['p1','p2'],outputs:['o1','o2','o3']});
-            API.Graph.InOut.New('input1','inputs');
-            API.Graph.InOut.New('output1','outputs');
-        },100);
-        setTimeout(function(){
-            API.Graph.components['test1'].Add.Link('o1','test2.i1');
-            API.Graph.components['test3'].Add.Link('o3','test1.i2');
-            API.Graph.components['test3'].Add.Link('o2','test2.i2');
-            API.Graph.components['test4'].Add.Link('i1','test1.o1');
-            API.Graph.components['test4'].Add.Link('i2','test2.o1');
-            API.Graph.components['test4'].Add.Link('o1','test5.p1');
-            API.Graph.components['test4'].Add.Link('o1','test5.i1');
-            API.Graph.components['input1'].Add.Link('input1','test3.i1');
-            API.Graph.components['output1'].Add.Link('output1','test5.o1');
-        },500);
-        setTimeout(function(){
+    var DEMO = function () {
+        setTimeout(function () {
+            API.Graph.Component.New('test1', {
+                inputs: ['i1', 'i2'],
+                parameters: ['p1', 'p2'],
+                outputs: ['o1', 'o2', 'o3']
+            });
+            API.Graph.Component.New('test2', {
+                inputs: ['i1', 'i2'],
+                parameters: ['p1', 'p2'],
+                outputs: ['o1', 'o2', 'o3']
+            });
+            API.Graph.Component.New('test3', {
+                inputs: ['i1', 'i2'],
+                parameters: ['p1', 'p2'],
+                outputs: ['o1', 'o2', 'o3']
+            });
+            API.Graph.Component.New('test4', {
+                inputs: ['i1', 'i2'],
+                parameters: ['p1', 'p2'],
+                outputs: ['o1', 'o2', 'o3']
+            });
+            API.Graph.Component.New('test5', {
+                inputs: ['i1', 'i2'],
+                parameters: ['p1', 'p2'],
+                outputs: ['o1', 'o2', 'o3']
+            });
+
+        }, 100);
+        setTimeout(function () {
+            API.Graph.components['test1'].Add.Link('o1', 'test2.i1');
+            API.Graph.components['test3'].Add.Link('o3', 'test1.i2');
+            API.Graph.components['test3'].Add.Link('o2', 'test2.i2');
+            API.Graph.components['test4'].Add.Link('i1', 'test1.o1');
+            API.Graph.components['test4'].Add.Link('i2', 'test2.o1');
+            API.Graph.components['test4'].Add.Link('o1', 'test5.p1');
+            API.Graph.components['test4'].Add.Link('o1', 'test5.i1');
+        }, 500);
+        setTimeout(function () {
             API.Graph.Directed_Graph();
-        },1000);
+        }, 1000);
     }
-    
 </script>
 
 </html>

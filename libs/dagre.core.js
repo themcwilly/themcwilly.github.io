@@ -754,6 +754,7 @@
              * attributes can influence layout.
              */
             function buildLayoutGraph(inputGraph) {
+                console.log(inputGraph);
                 var g = new Graph({
                     multigraph: true,
                     compound: true 
@@ -778,7 +779,13 @@
                     selectNumberAttrs(edge, edgeNumAttrs),
                     _.pick(edge, edgeAttrs)));
                 });
-
+//                for(var i in g._nodes){
+//                    if(!g._nodes[i].rank){
+//                        g._nodes[i].rank = -1;
+//                        missing = jQuery.extend(true,{},g._nodes[i]);
+//                    }
+//                }
+//                console.log(g);
                 return g;
             }
 
@@ -3067,8 +3074,8 @@
              */
             function longestPath(g) {
                 var visited = {};
-
                 function dfs(v) {
+                    //console.log(v);
                     var label = g.node(v);
                     if (_.has(visited, v)) {
                         return label.rank;
@@ -3082,7 +3089,8 @@
                     if (rank === Number.POSITIVE_INFINITY) {
                         rank = 0;
                     }
-
+//                    if(!label) console.log(API.Graph.graph.getCell(v));
+//                    if(!label) console.log(v);
                     return (label.rank = rank);
                 }
 

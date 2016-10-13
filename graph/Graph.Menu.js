@@ -121,6 +121,8 @@ var Menu = function(_GLOBAL){
             port_style_folder.open();
         }
         if(links_available){
+            console.log('Component Name: '+name);
+            console.log(links);
             var link_style_folder = style_folder.addFolder('Link Style');
             for(var link in links){
                 var link_list = link.split(':');

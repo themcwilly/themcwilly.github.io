@@ -58,9 +58,16 @@ graphlib = graphlib || "undefined" != typeof window && window.graphlib, dagre = 
                 }
             }),
             d = {};
-        return b.rankDir && (d.rankdir = b.rankDir), b.nodeSep && (d.nodesep = b.nodeSep), b.edgeSep && (d.edgesep = b.edgeSep), b.rankSep && (d.ranksep = b.rankSep), b.marginX && (d.marginx = b.marginX), b.marginY && (d.marginy = b.marginY), c.setGraph(d), dagre.layout(c, {
+        return b.rankDir && (d.rankdir = b.rankDir), 
+        b.nodeSep && (d.nodesep = b.nodeSep), 
+        b.edgeSep && (d.edgesep = b.edgeSep), 
+        b.rankSep && (d.ranksep = b.rankSep), 
+        b.marginX && (d.marginx = b.marginX), 
+        b.marginY && (d.marginy = b.marginY), 
+        c.setGraph(d), dagre.layout(c, {
             debugTiming: !!b.debugTiming
-        }), a.fromGraphLib(c, {
+        }), 
+        a.fromGraphLib(c, {
             importNode: function (a, c) {
                 var d = this.getCell(a),
                     e = c.node(a);

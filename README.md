@@ -57,3 +57,7 @@ MIT License (https://opensource.org/licenses/MIT)
 * Added the ability to traverse links and dynamically add components to the graph from remote sources
 * Added ability to drag graph
 * Added ability for graph to dynamically create referenced components and ports that are availble in connections, but not in the inputs/outputs/components themselves
+
+### v2.2016.10.12
+* Due to JoinJS's inability to handle Directed Graphs with port connections, I had to write a work-around that split the inputs and outputs of a process into two seperate cells (components)
+* Updated ability for Directed Graph to dynamically update as user adds and removes information from the graph
