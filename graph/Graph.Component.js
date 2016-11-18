@@ -19,7 +19,8 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 */
-var Component = function (_GLOBAL, params, isProcess) {
+var Component = function (_GLOBAL, params, isProcess, json) {
+    //if json is undefined it's because the source cannot be located and this is being created from the links
     var scope = this;
     this.graph = _GLOBAL.graph;
     this._GLOBAL = _GLOBAL;
@@ -41,6 +42,7 @@ var Component = function (_GLOBAL, params, isProcess) {
     }
     this.links = {}
     this.color = '#2ECC71';
+    this.json = json;
 
 
 
@@ -61,6 +63,7 @@ var Component = function (_GLOBAL, params, isProcess) {
         scope.component.updatePortsAttrs();
         scope.ports[type][name] = new Port(scope, name, type, css_link);
         scope.Beautify();
+        scope._portAdded(name);
 
     }
     this.Add.Link = function(from_port,to,properties){
@@ -98,7 +101,9 @@ var Component = function (_GLOBAL, params, isProcess) {
         
         scope.graph.addCell(link);
         //if(scope._GLOBAL.process != scope.params.name && scope._GLOBAL.process != scope._GLOBAL.components[to_comp].params.name) scope._GLOBAL.directed_graph.addCell(link);
-        var new_link = new Link(link);
+        var json;
+        if(properties && properties.json) json = properties.json
+        var new_link = new Link(link,scope._GLOBAL,json);
         var color = '#0000FF';
         if(properties){
             if(properties.color) color = '#FF0000';
@@ -110,6 +115,8 @@ var Component = function (_GLOBAL, params, isProcess) {
         scope._GLOBAL.maps.links[link.id] = link_name;
         //scope._GLOBAL.Directed_Graph();
         scope.Beautify();
+        
+        scope._linkAdded(link_name);
     }
     
     this.Reroute_Link = function(from_port,to,new_to){
@@ -154,6 +161,7 @@ var Component = function (_GLOBAL, params, isProcess) {
         scope.component.set(port, existing_ports);
         scope.component.updatePortsAttrs();
         scope.Beautify();
+        scope._portRemoved(name);
     }
     this.Remove.Link = function(from_port, to){
         //Remove link and all references
@@ -165,11 +173,12 @@ var Component = function (_GLOBAL, params, isProcess) {
         var link_name = scope.params.name+'.'+from_port+':'+to;
         var link_name_reversed = to+':'+scope.params.name+'.'+from_port;
         if(!scope._linkExistsQ(link_name) && !scope._linkExistsQ(link_name_reversed)) return console.log('Link does not exist.');
+        if(!scope.links[link_name]) link_name = link_name_reversed;
         var destroy_me = scope.links[link_name];
-        if(typeof destroy_me === 'undefined') destroy_me = scope.links[link_name_reversed];
+        //if(typeof destroy_me === 'undefined') destroy_me = scope.links[link_name_reversed];
         destroy_me.link.remove();
         delete  destroy_me;
-        
+        scope._linkRemoved(link_name);
     }
     
 
@@ -180,7 +189,7 @@ var Component = function (_GLOBAL, params, isProcess) {
     }
     this.Modify.Component_Color = function (color) {
         scope.component.attr('rect/fill', color);
-        //scope.group.attr('text/text',text);
+        scope.color = color;
     }
     this.Get_Ports = function (type) {
         var types = ['inputs', 'outputs', 'parameters'];
@@ -242,6 +251,231 @@ var Component = function (_GLOBAL, params, isProcess) {
 //        scope.component.attributes.size.width = width;
 //        scope.component.attributes.size.height = height;
     }
+    this.Menu = {};
+    this.Menu.Open = function(){
+        if(scope.params.name.indexOf('-IN')>-1 || scope.params.name.indexOf('-OUT')>-1) return;
+        $(".ui-dialog-content").dialog("close");
+        var xml = '';
+        if(scope.json){
+            xml = json2xml(JSON.stringify(jQuery.extend(true,{},scope.json)));
+            xml = formatXml(xml);
+            xml = xml.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/ /g, '&nbsp;').replace(/\n/g,'<br />');
+        }
+        var html = '<div id="component-editor" title="'+scope.params.name+' Properties">';
+        html = html + '<b>Color:</b>&nbsp;&nbsp;';
+        html = html + '<input type="text" id="component-color"></input>';
+        html = html + '<br>';
+        html = html + '<br>';
+        html = html + '<b>Formatted XML:</b><br>';
+        html = html + '<div id="component-XML" style="height:600px;overflow:auto;border-style: solid;">'+xml+'</div><br><br>';
+        html = html + '<button id="component-ports-add">Add Ports</button>';
+        html = html + '<button id="component-ports-edit">Edit Ports</button>';
+        html = html + '<button id="component-ports-remove">Remove Ports</button>';
+        html = html + '</div>';
+        $('body').append(html);
+        $('#component-color').spectrum({
+            color: scope.color,
+            move: function(col) {
+                var color=col.toHexString();
+                scope.Modify.Component_Color(color);
+            },
+            change: function(col){
+                //console.log('Cancel')
+            },
+            hide: function(col) {
+                if($(this).data('changed')) {
+                    // changed
+                } else {
+                    var color=col.toHexString();
+                    scope.Modify.Component_Color(color);
+                }
+            }
+        });
+        $('#component-editor').dialog();
+        $('#component-editor').dialog( "option", "height", 800 );
+        $('#component-editor').dialog( "option", "width", 800 );
+        $('.ui-dialog :button').blur();
+        $('#component-editor').on('dialogclose', function(event) {
+            $('#component-editor').remove();
+        });
+        $('#component-XML').resizable();
+        $('#component-editor button').button();
+        $('#component-editor button').on('click',function(e){
+            var id = e.currentTarget.id;
+            if(id.indexOf('add')>-1) scope.Menu.Port.Add();
+            if(id.indexOf('edit')>-1) scope.Menu.Port.Edit();
+            if(id.indexOf('remove')>-1) scope.Menu.Port.Remove();
+        })
+    }
+    this.Menu.Close = function(){
+        $('#component-editor').hide();
+        $('#component-editor').remove();
+    }
+    this.Menu.Port = {};
+    this.Menu.Port.Add = function(){
+        $(".ui-dialog-content").dialog("close");
+        var html = '<div id="port-add-dialog" title="Add Port">';
+        html = html + '<b>Name:</b><br>';
+        html = html + '<input type="text" id="port-name"></input><br><br>';
+        html = html + '<b>Type:</b><br>';
+        html = html + '<select id="port-type">';
+        html = html + '<option>inputs</option>';
+        html = html + '<option>outputs</option>';
+        html = html + '<option>parameters</option>';
+        html = html + '</select><br><br>';
+        html = html + '<button id="port-add">Add Port</button>';
+        html = html + '<button id="goback">Go Back</button>';
+        html = html + '</div>';
+        $('body').append(html);
+        
+        $('#port-add-dialog').dialog();
+        $('#port-name').button()
+        $('#port-type').selectmenu()
+        $('#port-add').button()
+        $('#goback').button()
+        
+        $('#port-add-dialog').on('dialogclose', function(event) {
+            $('#port-add-dialog').remove();
+        });
+        $('#port-add').on('click',function(){
+            var type = $( "#port-type option:selected" ).text();
+            var name = $( "#port-name" ).val();
+            if(name=='' || scope.ports[type][name]) return alertUser('Please supply a valid name.');
+            scope.Add.Port(type,name);
+            $('#port-add-dialog').hide();
+            $('#port-add-dialog').remove();
+        })
+        $('#goback').on('click',function(){
+            $('#port-add-dialog').hide();
+            $('#port-add-dialog').remove();
+            scope.Menu.Open();
+        })
+    }
+    this.Menu.Port.Edit = function(){
+        $(".ui-dialog-content").dialog("close");
+        var html = '<div id="port-edit-dialog" title="Edit Port">';
+        html = html + '<b>Port:</b><br><br>';
+        html = html + '<select id="port-type">';
+        html = html + '<option>inputs</option>';
+        html = html + '<option>outputs</option>';
+        html = html + '<option>parameters</option>';
+        html = html + '</select><br><br>';
+        html = html + '<select id="port-selection">';
+        for(var port in scope.ports.inputs){
+            html = html + '<option>'+port+'</option>';
+        }
+        html = html + '</select><br><br>';
+        html = html + '<input type="text" id="port-color"></input><br><br>';
+        html = html + '<button id="goback">Go Back</button>';
+        html = html + '</div>';
+        $('body').append(html);
+        
+        $('#port-edit-dialog').dialog();
+        $('#port-type').selectmenu({
+            change: function(){
+                var selected = $( "#port-type option:selected" ).text();
+                var html = '';
+                var firstPort;
+                for(var port in scope.ports[selected]){
+                    if(!firstPort) firstPort = port;
+                    html = html + '<option>'+port+'</option>';
+                }
+                $('#port-selection').html(html);
+                $('#port-selection').selectmenu('refresh');
+                $("#port-color").spectrum("set", scope.ports[selected][firstPort].color);
+            }
+        });
+        $('#port-selection').selectmenu({
+            change: function(){
+                var type = $( "#port-type option:selected" ).text();
+                var port = $( "#port-selection option:selected" ).text();
+                $("#port-color").spectrum("set", scope.ports[type][port].color);
+            }
+        });
+        $('#port-selection').selectmenu();
+//        $('#port-add').button()
+        $('#goback').button();
+        
+        var keys = Object.keys(scope.ports.inputs);
+        var firstPortColor = scope.ports.inputs[keys[0]].color;
+        $('#port-color').spectrum({
+            color: firstPortColor,
+            move: function(col) {
+                var color=col.toHexString();
+                var type = $( "#port-type option:selected" ).text();
+                var port = $( "#port-selection option:selected" ).text();
+                scope.ports[type][port].Color(color);
+            }
+        });
+        $('#port-edit-dialog').on('dialogclose', function(event) {
+            $('#port-edit-dialog').remove();
+        });
+        $('#goback').on('click',function(){
+            $('#port-edit-dialog').hide();
+            $('#port-edit-dialog').remove();
+            scope.Menu.Open();
+        })
+    }
+    this.Menu.Port.Remove = function(){
+        $(".ui-dialog-content").dialog("close");
+        var html = '<div id="port-remove-dialog" title="Remove Port">';
+        html = html + '<b>Port:</b><br><br>';
+        html = html + '<select id="port-type">';
+        html = html + '<option>inputs</option>';
+        html = html + '<option>outputs</option>';
+        html = html + '<option>parameters</option>';
+        html = html + '</select><br><br>';
+        html = html + '<select id="port-selection">';
+        for(var port in scope.ports.inputs){
+            html = html + '<option>'+port+'</option>';
+        }
+        html = html + '</select><br><br>';
+        html = html + '<button id="port-remove">Remove Port</button>';
+        html = html + '<button id="goback">Go Back</button>';
+        html = html + '</div>';
+        $('body').append(html);
+        
+        $('#port-remove-dialog').dialog();
+        $('#port-type').selectmenu({
+            change: function(){
+                var selected = $( "#port-type option:selected" ).text();
+                var html = '';
+                var firstPort;
+                for(var port in scope.ports[selected]){
+                    if(!firstPort) firstPort = port;
+                    html = html + '<option>'+port+'</option>';
+                }
+                $('#port-selection').html(html);
+                $('#port-selection').selectmenu('refresh');
+            }
+        });
+        $('#port-remove').on('click',function(){
+            var type = $( "#port-type option:selected" ).text();
+            var port = $( "#port-selection option:selected" ).text();
+            scope.Remove.Port(type+':'+port);
+            html = '';
+            for(var port in scope.ports[type]){
+                html = html + '<option>'+port+'</option>';
+            }
+            $('#port-selection').html(html);
+            $('#port-selection').selectmenu('refresh');
+        });
+        $('#port-selection').selectmenu();
+        $('#port-remove').button()
+        $('#goback').button();
+        $('#port-remove-dialog').on('dialogclose', function(event) {
+            $('#port-remove-dialog').remove();
+        });
+        $('#goback').on('click',function(){
+            $('#port-remove-dialog').hide();
+            $('#port-remove-dialog').remove();
+            scope.Menu.Open();
+        })
+    }
+    
+    
+    
+    
     this._linkExistsQ = function(link_name){
         if(typeof scope.links[link_name] !== 'undefined') return true;
         var reverse = link_name.split(':').reverse();
@@ -261,7 +495,42 @@ var Component = function (_GLOBAL, params, isProcess) {
         return attached;
     }
     
+    
+    //Each of these are to provide JSON update information
+    this._linkAdded = function(name,cellView){
+        //check if it already exists in json.. if it does, it was added on import
+        console.log('JSON UPDATE (ADDING LINK): '+name);
+        //if json does not exist, it must be created from scratch...
+        if(scope.json) console.log(scope.json);
+        if(!scope.json) console.log('JSON does not exist... must create from scratch');
+    }
+    this._linkRemoved = function(name){
+        console.log('JSON UPDATE (REMOVING LINK): '+name);
+    }
+    this._portAdded = function(name){
+        console.log('JSON UPDATE (ADDING PORT): '+name);
+    }
+    this._portRemoved = function(name){
+        console.log('JSON UPDATE (REMOVING PORT): '+name);
+    }
+    this._componentAdded = function(){
+        component._componentName = params.name;
+        if(!json) console.log('JSON UPDATE (ADDING COMPONENT): '+params.name+' --> No JSON present... must generate.');
+        if(json) console.log('JSON UPDATE (ADDING COMPONENT): '+params.name);
+    }
+    this._componentRemoved = function(){
+        //This functionality is not in the menu yet - however, it must be removed from Graph.js since this will not have reference to the parent json structure
+    }
+    this._componentMoved = function(pos){
+        console.log('JSON UPDATE (MOVING): '+scope.params.name+' ==> '+pos.x+', '+pos.y);
+    }
+    
+    
+    //**********************************
+    //**********************************
     //INITIALIZE
+    //**********************************
+    //**********************************
     if (!params.x) return console.log('Please supply x value.');
     if (!params.y) return console.log('Please supply y value.');
     if (!params.name) return console.log('Please supply name.');
@@ -316,7 +585,8 @@ var Component = function (_GLOBAL, params, isProcess) {
     
     
     
-    component.JUNK = params.name;
+    
+    scope._componentAdded();
     
     scope.component = component;
     

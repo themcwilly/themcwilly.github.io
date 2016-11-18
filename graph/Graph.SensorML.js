@@ -40,7 +40,45 @@ function xmlToString(xmlData) {
     }
     return xmlString;
 }
+function formatXml(xml) {
+    var formatted = '';
+    var reg = /(>)(<)(\/*)/g;
+    xml = xml.replace(reg, '$1\r\n$2$3');
+    var pad = 0;
+    jQuery.each(xml.split('\r\n'), function(index, node) {
+        var indent = 0;
+        if (node.match( /.+<\/\w[^>]*>$/ )) {
+            indent = 0;
+        } else if (node.match( /^<\/\w/ )) {
+            if (pad != 0) {
+                pad -= 1;
+            }
+        } else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
+            indent = 1;
+        } else {
+            indent = 0;
+        }
 
+        var padding = '';
+        for (var i = 0; i < pad; i++) {
+            padding += '  ';
+        }
+
+        formatted += padding + node + '\r\n';
+        pad += indent;
+    });
+
+    return formatted;
+}
+var alertUser = function(msg){
+    var html = '<div id="alert">'+msg+'</div>';
+    $('body').append(html);
+    $('#alert').dialog();
+    $('.ui-dialog :button').blur();
+    $('#alert').on('dialogclose', function(event) {
+        $('#alert').remove();
+    });
+}
 
 var SensorML = function(_GLOBAL){
     var scope = this;
@@ -69,7 +107,7 @@ var SensorML = function(_GLOBAL){
         for(var type in json){
             scope.process = type;
             scope._GLOBAL.Graph.process = type;
-            scope._GLOBAL.Graph.Component.New(type,{},true);
+            scope._GLOBAL.Graph.Component.New(type,{},true,json[type]);
             scope._JSONparser.GeneralProcess(json[type]);
         }
         console.log('CHECKING FOR LEFTOVERS...');
@@ -104,7 +142,18 @@ var SensorML = function(_GLOBAL){
         document.getElementById('file_browser').addEventListener('change',file_reader);
         document.getElementById('file_browser').click()
     }
-    this._get_link = function(link,component,callback){
+    this._get_link = function(link,component,the_json){
+        
+        console.log(link);
+        
+        if(link=='http://www.sensorML.com/2.0/mvco/sensor/MVCO_Workhorse_1200.xml') link='_XML/MVCO_Workhorse_1200.xml';
+        if(link=='http://www.sensorML.com/2.0/mvco/sensor/RDI_Workhorse_1200.xml') link='_XML/RDI_Workhorse_1200.xml';
+        if(link=='http://www.sensorML.com/2.0/mvco/sensor/Velocity_QC_Chain.xml') link='_XML/Velocity_QC_Chain.xml';
+        if(link=='http://www.sensorML.com/2.0/mvco/sensor/Pressure_QC_Chain.xml') link='_XML/Pressure_QC_Chain.xml';
+        
+        
+        
+        
         $.ajax({
             async: false,
             type: 'GET',
@@ -114,11 +163,16 @@ var SensorML = function(_GLOBAL){
                 var json = xml2json(XML);
                 if(json.PhysicalSystem) scope._JSONparser.GeneralProcess(json.PhysicalSystem, component);
                 if(json.AggregateProcess) scope._JSONparser.GeneralProcess(json.AggregateProcess,component);
-                if(callback) callback();
+                //delete non-necessary information and back-fill with shallow copied JSON
+                for(var key in the_json){
+                    if(key!='__prefix' && key!='_name') delete the_json[key];
+                }
+                if(the_json && json.PhysicalSystem) the_json.PhysicalSystem = json.PhysicalSystem;
+                if(the_json && json.AggregateProcess) the_json.AggregateProcess = json.AggregateProcess;
             },
             error: function(){
                 console.log('The link "'+link+'" was not available.');
-                if(callback) callback();
+                //if(callback) callback();
             }
         });
     }
@@ -126,7 +180,7 @@ var SensorML = function(_GLOBAL){
     this._JSONparser = {
         GeneralProcess: function(json,component){
             if(json.typeOf) return scope._get_link(json.typeOf['_xlink:href'],component);
-            if(component) scope._GLOBAL.Graph.Component.New(component);
+            if(component) scope._GLOBAL.Graph.Component.New(component,{},false,json);
             if(json.inputs) scope._JSONparser.inputs(json.inputs,component);
             if(json.outputs) scope._JSONparser.outputs(json.outputs,component);
             if(json.parameters) scope._JSONparser.parameters(json.parameters,component);
@@ -138,12 +192,6 @@ var SensorML = function(_GLOBAL){
             }else{
                 if(json.components) scope._JSONparser.components(json.components,function(){
                     if(json.connections) scope._JSONparser.connections(json.connections,component);
-                    //scope._GLOBAL.Graph.Directed_Graph();
-//                    setTimeout(function(){
-//                        scope._GLOBAL.Graph.paper.model.resetCells(scope._GLOBAL.Graph.graph.get('cells'));
-//                        //scope._GLOBAL.Graph.Directed_Graph();
-//                    },1000)
-                    
                 });
             }
         },
@@ -155,12 +203,10 @@ var SensorML = function(_GLOBAL){
         },
         input: function(json,component){
             if(typeof json.push === 'undefined'){
-                //if(json._name && typeof component !== 'string') scope._GLOBAL.Graph.InOut.New(json._name,'inputs'); //THIS IS A PARENT INPUT
                 if(json._name && typeof component !== 'string') scope._GLOBAL.Graph.Component.Add_Port(scope.process,'inputs',json._name); //THIS IS A PARENT INPUT
                 if(json._name && typeof component === 'string') scope._GLOBAL.Graph.Component.Add_Port(component,'inputs',json._name);
             }else{
                 for(var i=0; i<json.length; i++){
-                    //if(json[i]._name && typeof component !== 'string') scope._GLOBAL.Graph.InOut.New(json[i]._name,'inputs'); //THIS IS A PARENT INPUT
                     if(json[i]._name && typeof component !== 'string') scope._GLOBAL.Graph.Component.Add_Port(scope.process,'inputs',json[i]._name); //THIS IS A PARENT INPUT
                     if(json[i]._name && typeof component === 'string') scope._GLOBAL.Graph.Component.Add_Port(component,'inputs',json[i]._name);
                 }
@@ -174,12 +220,10 @@ var SensorML = function(_GLOBAL){
         },
         output: function(json,component){
             if(typeof json.push === 'undefined'){
-//                if(json._name && typeof component !== 'string') scope._GLOBAL.Graph.InOut.New(json._name,'outputs');
                 if(json._name && typeof component !== 'string') scope._GLOBAL.Graph.Component.Add_Port(scope.process,'outputs',json._name); //THIS IS A PARENT OUTPUT
                 if(json._name && typeof component === 'string') scope._GLOBAL.Graph.Component.Add_Port(component,'outputs',json._name);
             }else{
                 for(var i=0; i<json.length; i++){
-//                    if(json[i]._name && typeof component !== 'string') scope._GLOBAL.Graph.InOut.New(json[i]._name,'outputs');
                     if(json[i]._name && typeof component !== 'string') scope._GLOBAL.Graph.Component.Add_Port(scope.process,'outputs',json[i]._name); //THIS IS A PARENT OUPUT
                     if(json[i]._name && typeof component === 'string') scope._GLOBAL.Graph.Component.Add_Port(component,'outputs',json[i]._name);
                 }
@@ -210,14 +254,14 @@ var SensorML = function(_GLOBAL){
         },
         component: function(json,callback){
             if(typeof json.push === 'undefined'){
-                if(json._name && json['_xlink:href']) scope._get_link(json['_xlink:href'],json._name); //another page
+                if(json._name && json['_xlink:href']) scope._get_link(json['_xlink:href'],json._name,json); //another page
                 if(json._name && json.SimpleProcess && !json['_xlink:href']) scope._JSONparser.GeneralProcess(json.SimpleProcess,json._name);
                 if(json._name && json.PhysicalComponent && !json['_xlink:href']) scope._JSONparser.GeneralProcess(json.PhysicalComponent,json._name);
             }else{
                 for(var i=0; i<json.length; i++){
                     if(json[i]._name && json[i].SimpleProcess && !json[i]['_xlink:href']) scope._JSONparser.GeneralProcess(json[i].SimpleProcess,json[i]._name);
                     if(json[i]._name && json[i].PhysicalComponent && !json[i]['_xlink:href']) scope._JSONparser.GeneralProcess(json[i].PhysicalComponent,json[i]._name);
-                    if(json[i]._name && json[i]['_xlink:href']) scope._get_link(json[i]['_xlink:href'],json[i]._name); //another page
+                    if(json[i]._name && json[i]['_xlink:href']) scope._get_link(json[i]['_xlink:href'],json[i]._name,json[i]); //another page
                 }
             }
             if(callback) callback();
@@ -283,7 +327,7 @@ var SensorML = function(_GLOBAL){
             var from = from_comp+'.'+from_port;
             var to = to_comp+'.'+to_port;
 
-            scope._GLOBAL.Graph.Component.Add_Link(from,from_type,to,to_type);
+            scope._GLOBAL.Graph.Component.Add_Link(from,from_type,to,to_type,{json:json});
             
         }
     }

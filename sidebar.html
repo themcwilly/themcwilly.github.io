@@ -1,0 +1,31 @@
+<ul id="components_menu">
+    <li title="">MVCO_Workhorse</li>
+    <li>Component2</li>
+    <li>Component3</li>
+    <li>Component4</li>
+    <li>Component5</li>
+</ul>
+<script type="text/javascript">
+    var components_menu_actions = {
+        MVCO_Workhorse: function(){
+            var result = API.Graph.Component.New('MVCO_Workhorse', {
+                inputs: ['seaWaterPressure', 'seaWaterTemperature','volumetricBackscatter','particleMotion','temperature','tilt','heading'],
+                parameters: ['dopplerParameters', 'CommunicationsParameters'],
+                outputs: ['ADCP_outputs', 'pressureTimeSeries', 'velocityTimeSeries']
+            });
+            if(typeof result === 'string') alertUser(result);
+        }
+    }
+    $("ul#components_menu").sidebar();
+    var children = $("ul#components_menu").children();
+    for(var i=0; i<children.length; i++){
+        $(children[i]).tooltip({ 
+            content: '<img src="css/sidebar/images/'+$(children[i]).text()+'.png"  />'
+            //position: { my: "left+15 center", at: "right center" }
+        });
+        $(children[i]).click(function(e){
+            //alert('Add the following: '+this.innerHTML);
+            components_menu_actions[this.innerHTML]();
+        })
+    }
+</script>

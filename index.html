@@ -2,10 +2,21 @@
 <meta charset="utf-8">
 
 <head>
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="css/joint.min.css">
+    <link rel="stylesheet" type="text/css" href="css.css">
+    <link rel="stylesheet" type="text/css" href="css/sidebar/dark-glass/sidebar.css" />
+    <link rel="stylesheet" type="text/css" href="css/spectrum.css" />
+    <link rel="stylesheet" type="text/css" href="_external/topbar/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="_external/topbar/css/component.css" />
+    
+    
     <script src="prototypes.js"></script>
     <script src='libs/underscore-min.js'></script>
     <script src='libs/dat.gui.js'></script>
     <script src='libs/jquery.min.js'></script>
+    <script src="libs/jqueryui.js"></script>
+    <script src="libs/jquery.sidebar.js"></script>
     <script src='libs/lodash.min.js'></script>
     <script src='libs/backbone-min.js'></script>
     <script src='libs/joint.min.js'></script>
@@ -13,6 +24,7 @@
     <script src='libs/graphlib.core.js'></script>
     <script src='libs/dagre.core.js'></script>
     <script src='libs/jointjs.directedgraph.js'></script>
+    <script src='libs/spectrum.js'></script>
 
     <script src="graph/Graph.js"></script>
     <script src="graph/Graph_API.js"></script>
@@ -22,37 +34,30 @@
     <script src="graph/Graph.Link.js"></script>
     <script src="graph/Graph.SensorML.js"></script>
     <script src="graph/Graph.Menu.js"></script>
+    
+    <script src="_external/topbar/js/modernizr.custom.js"></script>
+    <script src="_external/topbar/js/cbpHorizontalSlideOutMenu.min.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="css/joint.min.css">
-    <link rel="stylesheet" type="text/css" href="css.css">
 
 </head>
 
 <body>
-    <!--
-    <h2>Link Information:</h2>
-    <b>IMPORT: </b>
-    <input id="import_link" value="https://themcwilly.github.io/data_files/AggregateProcess.txt" style="width:400px;" />
-    <button id="import_link_button">Import</button><br>
-    <b>From File:</b>
-    <input type="file" id="fileLoader" name="files" title="Load File" />
-    <input type="button" id="btnOpenFileDialog" value = "Import XML"  />
-    <br>
-    <b>EXPORT: </b>
-    <input id="export_link" value="Export address goes here" style="width:400px;" />
-    <button id="export_link_button">Export</button>
-    <br>
-    <button id="save_button">Save XML</button>
--->
     <input id="file_browser" type="file" style="display:none" />
-
+    <div id="topbar"></div>
     <div id="paper-create"></div>
+<!--    <div id="sidebar"></div>-->
+    
+
+    
     <!--    <img src="http://www.sensorml.com/sensorML-2.0/examples/images/ScaleAndClip.gif"></img>-->
 </body>
 
 <script>
-    var API = new Graph_API();
-    var base;
+        $( "#topbar" ).load( "topbar.html");
+        var API = new Graph_API();
+        //$( "#sidebar" ).load( "sidebar.html" );
+       
+        $( document ).tooltip();
 </script>
 
 <script>

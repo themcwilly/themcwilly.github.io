@@ -61,3 +61,7 @@ MIT License (https://opensource.org/licenses/MIT)
 ### v2.2016.10.12
 * Due to JoinJS's inability to handle Directed Graphs with port connections, I had to write a work-around that split the inputs and outputs of a process into two seperate cells (components)
 * Updated ability for Directed Graph to dynamically update as user adds and removes information from the graph
+
+### v2.2016.11.18
+* Added new menu functionality that is shown from keyboard interaction
+* New top menu that allows the user to select from common, pre-defined components

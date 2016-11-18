@@ -31,8 +31,11 @@ var Graph = function (_GLOBAL) {
     this.paper = null;
     this.component_graph = null;
     this.mousedown = false;
+    this.currentMousePos = {x:0,y:0};
     this.linkJustAdded = false;
     this.linkJustRemoved = false;
+    this.linkHovering = null;
+    this.componentHovering = null;
     this.dragStartPosition;
     
     this.ios = {inputs: [],outputs:[]};
@@ -59,7 +62,7 @@ var Graph = function (_GLOBAL) {
     }
     
     this.Component = {};
-    this.Component.New = function (name, ports, isProcess) {
+    this.Component.New = function (name, ports, isProcess,json) {
         if (typeof name === 'undefined' || name == '') return 'Please supply a valid name.';
         if (typeof scope.components[name] !== 'undefined') return name + ' has already been used.';
         var properties = {
@@ -74,7 +77,6 @@ var Graph = function (_GLOBAL) {
             }
         }
         
-        
         //attempt to split main process into in and out - directed graph algorithm sucks.. can only handle links to cells... not ports
         if(isProcess){
             var in_props = jQuery.extend(true,{},properties);
@@ -88,8 +90,8 @@ var Graph = function (_GLOBAL) {
             return;
         }
         
-        
-        var component = new Component(scope, properties, isProcess);
+        //if json is undefined, it's because the processes are being created from the connections.. and cannot be retrieved from another source.
+        var component = new Component(scope, properties, isProcess, json);
         scope.components[name] = component;
 
 
@@ -182,6 +184,7 @@ var Graph = function (_GLOBAL) {
     this.Component.Remove = function (name) {
         //Traverse links and nodes and remove all
         scope.components[name].component.remove();
+        scope.components[name]._componentRemoved();
         delete scope.components[name];
     }
 
@@ -286,13 +289,69 @@ var Graph = function (_GLOBAL) {
                     scope.linkJustAdded = false;
                 }, 200)
             }
-        })
+        });
+        $(document).keydown(function(e) {
+            if (e.ctrlKey) {
+                if(scope.linkHovering!=null){
+                    var component = scope.linkHovering.split(':')[0].split('.')[0];
+                    scope.components[component].links[scope.linkHovering].Menu.Open();
+                }else if(scope.componentHovering!=null){
+                    scope.components[scope.componentHovering].Menu.Open();
+                }
+            }
+        });
+        $(document).keyup(function(e) {
+            if(scope._GLOBAL.Menu.coloring) scope._GLOBAL.Menu.Init();
+//            if(scope.linkHovering != null){
+//                var component = scope.linkHovering.split(':')[0].split('.')[0];
+//                scope.components[component].links[scope.linkHovering].Menu.Close();
+//            }
+//            scope.linkHovering = null;
+            
+            
+//            if(scope.linkHovering!=null){
+//                console.log('CONTROL RELEASED FROM: '+scope.linkHovering);
+//                var component = scope.linkHovering.split(':')[0].split('.')[0];
+//                console.log('I am coloring: '+scope._GLOBAL.Menu.coloring);
+//                if(scope._GLOBAL.Menu.coloring) scope._GLOBAL.Menu.Init();
+//                scope.linkHovering = null;
+//            }
+        });
+        scope.paper.on('cell:mouseover',
+            function (cellView, evt, x, y) {
+                if (typeof cellView.sourceView !== 'undefined') { //link
+                    var link_name = scope.maps.links[cellView.model.id];
+                    var source_component = link_name.split(':')[0].split('.')[0];
+                    var source_port = link_name.split(':')[0].split('.')[1];
+                    var target_component = link_name.split(':')[1].split('.')[0];
+                    var target_port = link_name.split(':')[1].split('.')[1];
+                    scope.linkHovering = link_name;
+                }else{//it's a component
+                    var component = cellView.model.attributes.attrs['.label'].text;
+                    scope.componentHovering = component;
+                }
+            }
+        );
+        scope.paper.on('cell:mouseout',
+            function (cellView, evt, x, y) {
+                scope.linkHovering=null;
+                scope.componentHovering=null;
+//                if (typeof cellView.sourceView !== 'undefined') { //link
+//                    var link_name = scope.maps.links[cellView.model.id];
+//                    var source_component = link_name.split(':')[0].split('.')[0];
+//                    if(scope.linkHovering != null){
+//                        var component = scope.linkHovering.split(':')[0].split('.')[0];
+//                        scope.components[source_component].links[scope.linkHovering].Menu.Close();
+//                    }
+//                    scope.linkHovering = null;
+//                }
+            }
+        );
         scope.paper.on('cell:pointerup',
             function (cellView, evt, x, y) {
                 if (scope.linkJustRemoved) return;
 
                 //NOTE: when the pointer creates a link, it cannot access the node below it... this will only ever fire components and links
-                base = cellView;
                 if (typeof cellView.sourceView !== 'undefined') { //link
                     var source_component = cellView.sourceView.model.attributes.attrs['.label'].text;
                     if (cellView.targetView == null) {
@@ -300,9 +359,10 @@ var Graph = function (_GLOBAL) {
                         return;
                     }
                     var target_component = cellView.targetView.model.attributes.attrs['.label'].text;
-                    console.log(cellView.model);
+                    //the port does not exist if the link already exists... only port selectors, which are maps to css functions... huge flaw for jointjs. needs work-around.
                     var source_port = cellView.model.get('source').port;
                     var target_port = cellView.model.get('target').port;
+                    
                     if (!scope._goodConnectionQ(source_component, target_component, source_port, target_port)) {
                         if (scope.linkJustAdded) cellView.remove();
                         return;
@@ -318,7 +378,7 @@ var Graph = function (_GLOBAL) {
                     var link_name = source_component + '.' + source_port + ':' + target_component + '.' + target_port;
                     cellView.model.set('router', {name: 'metro'});
                     cellView.model.set('connector', {name: 'rounded'});
-                    var new_link = new Link(cellView.model);
+                    var new_link = new Link(cellView.model,scope);
                     new_link.Color('#FF0000');
                     scope.components[source_component].links[link_name] = new_link;
                     scope.components[target_component].links[link_name] = new_link;
@@ -326,6 +386,8 @@ var Graph = function (_GLOBAL) {
                     scope._GLOBAL.Menu.Component(source_component);
                     scope.maps.links[cellView.model.id] = link_name;
                     scope.Directed_Graph();
+                    //only need to perform _linkAdded from one component
+                    scope.components[source_component]._linkAdded(link_name);
                 } else {
                     var component = cellView.model.attributes.attrs['.label'].text;
                     //scope.Component.Select(component);
@@ -353,6 +415,8 @@ var Graph = function (_GLOBAL) {
                 scope._GLOBAL.Menu.selected = null;
                 scope._GLOBAL.Menu.Component(from);
                 scope.Directed_Graph();
+                //only need to perform _linkRemoved from one component
+                scope.components[from]._linkRemoved(link_name);
             } else {
                 //scope.component_graph.removeCells([cellView]);
             }
@@ -364,7 +428,9 @@ var Graph = function (_GLOBAL) {
             if (opt.skipParentHandler) return;
             if (cell.get('embeds') && cell.get('embeds').length) cell.set('originalPosition', cell.get('position'));
             var parentId = cell.get('parent');
+            if(scope.components[cell._componentName]) scope.components[cell._componentName]._componentMoved(newPosition);//update the json
             if (!parentId) return;
+            
             var parent = scope.graph.getCell(parentId);
             var parentBbox = parent.getBBox();
             if (!parent.get('originalPosition')) parent.set('originalPosition', parent.get('position'));
@@ -394,6 +460,7 @@ var Graph = function (_GLOBAL) {
             }, {
                 skipParentHandler: true
             });
+            
         });
         
         
@@ -406,8 +473,13 @@ var Graph = function (_GLOBAL) {
         document.body.onmouseup = function () {
             scope.mousedown = false;
         }
-        
-        
+        $(document).mousemove(function(event) {
+            scope.currentMousePos.x = event.pageX;
+            scope.currentMousePos.y = event.pageY;
+        });
+        $("body").on("contextmenu",function(){
+           return false;
+        });
     });
 }
 

@@ -24,6 +24,7 @@ var Menu = function(_GLOBAL){
     this._GLOBAL = _GLOBAL;
     
     this.selected = null;
+    this.coloring = false;
     
     this.Component = function(name){
         if(scope.selected == name) return;
@@ -147,7 +148,20 @@ var Menu = function(_GLOBAL){
         scope._back(gui);
         
     }
+    this.Color_Picker = function(current_color,callback){
+        if(scope.coloring) return scope.Init();
+        scope.coloring = true;
+        var gui = scope._newMenu();
+        var func = function(){
+            this.color = current_color;
+        }
+        var menu = new func();
+        gui.addColor(menu,'color').onChange(function(color){
+            if(callback) callback(color); 
+        });
+    }
     this.Init = function(){
+        scope.coloring = false;
         var gui = scope._newMenu();
         
         
